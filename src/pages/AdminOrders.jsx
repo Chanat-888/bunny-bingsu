@@ -1,92 +1,82 @@
 import { useEffect, useState } from "react";
 import styles from "./AdminOrders.module.css";
+import { db } from "../firebase";
+import {
+  collection,
+  onSnapshot,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("orders");
-    if (stored) {
-      setOrders(JSON.parse(stored));
-    }
+    const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
+      const ordersFromDb = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setOrders(ordersFromDb);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const markAsCompleted = (id) => {
-    const updated = orders.map((order) =>
-      order.id === id ? { ...order, status: "completed" } : order
-    );
-    setOrders(updated);
-    localStorage.setItem("orders", JSON.stringify(updated));
+  const markAsCompleted = async (id) => {
+    await updateDoc(doc(db, "orders", id), {
+      status: "completed",
+    });
   };
 
-  const toggleServed = (id) => {
-    const updated = orders.map((order) =>
-      order.id === id ? { ...order, served: !order.served } : order
-    );
-    setOrders(updated);
-    localStorage.setItem("orders", JSON.stringify(updated));
+  const toggleServed = async (id, current) => {
+    await updateDoc(doc(db, "orders", id), {
+      served: !current,
+    });
   };
 
-  const clearAllOrders = () => {
-    if (window.confirm("Are you sure you want to clear all order history?")) {
-      localStorage.removeItem("orders");
-      setOrders([]);
-    }
-  };
-
-  const getTotalRevenue = () => {
-    return orders.reduce((sum, order) => {
-      const orderTotal = order.items.reduce(
-        (orderSum, item) => orderSum + item.price * item.quantity,
-        0
-      );
-      return sum + orderTotal;
-    }, 0);
+  const getTotal = (items) => {
+    return items
+      .reduce((sum, item) => sum + item.price * item.quantity, 0)
+      .toFixed(2);
   };
 
   return (
     <div className={styles.page}>
-      <h1>Order History</h1>
-
+      <h1>Customer Orders</h1>
       {orders.length === 0 ? (
         <p>No orders yet.</p>
       ) : (
-        <>
-          <button onClick={clearAllOrders} className={styles.clearButton}>
-            🗑 Clear Order History
-          </button>
+        orders.map((order) => (
+          <div key={order.id} className={styles.orderCard}>
+            <h3>🪑 Table {order.table}</h3>
+            <p>🕒 {order.createdAt?.toDate?.().toLocaleString?.() || "Time not available"}</p>
+            <ul>
+              {order.items.map((item, index) => (
+                <li key={index}>
+                  {item.quantity} × {item.name}
+                  {item.toppings?.length > 0 && (
+                    <span> with {item.toppings.join(", ")}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p><strong>Total:</strong> ${getTotal(order.items)}</p>
+            <p>Status: {order.status}</p>
+            <p>Served: {order.served ? "✅ Yes" : "❌ No"}</p>
 
-          {orders.map((order) => (
-            <div key={order.id} className={styles.orderCard}>
-              <h3>🪑 Table {order.table}</h3>
-              <p>🕒 {new Date(order.createdAt).toLocaleString()}</p>
-              <ul>
-                {order.items.map((item, index) => (
-                  <li key={index}>
-                    {item.quantity} × {item.name}
-                    {item.toppings?.length > 0 && (
-                      <span> with {item.toppings.join(", ")}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <p>Status: {order.status}</p>
+            <div className={styles.actions}>
               {order.status !== "completed" && (
                 <button onClick={() => markAsCompleted(order.id)}>
                   Mark as Completed
                 </button>
               )}
-              <p>Served: {order.served ? "✅ Yes" : "❌ No"}</p>
-              <button onClick={() => toggleServed(order.id)}>
+              <button onClick={() => toggleServed(order.id, order.served)}>
                 Mark as {order.served ? "Not Served" : "Served"}
               </button>
             </div>
-          ))}
-
-          <div className={styles.revenueBox}>
-            <h2>Total Revenue: ฿{getTotalRevenue().toFixed(2)}</h2>
           </div>
-        </>
+        ))
       )}
     </div>
   );

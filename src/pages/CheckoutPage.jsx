@@ -2,6 +2,9 @@ import { useCart } from "../context/CartContext";
 import { Link, useNavigate } from "react-router-dom";
 import styles from "./CheckoutPage.module.css";
 import { useState } from "react";
+import { db } from "../firebase";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
+
 
 export default function CheckoutPage() {
   const { cart, clearCart, setCart } = useCart();
@@ -21,28 +24,31 @@ export default function CheckoutPage() {
     .reduce((sum, item) => sum + item.quantity * item.price, 0)
     .toFixed(2);
 
-  const handleCheckout = () => {
-    if (!tableNumber) {
-      alert("Please enter table number");
-      return;
-    }
+  const handleCheckout = async () => {
+  if (!tableNumber) {
+    alert("Please enter table number");
+    return;
+  }
 
-    const order = {
-      id: Date.now(),
-      table: tableNumber,
-      items: cart,
-      createdAt: new Date().toISOString(),
-      status: "completed",
-    };
+  const order = {
+    table: tableNumber,
+    items: cart,
+    createdAt: Timestamp.now(),
+    status: "pending", // You can change to "completed" if needed
+    served: false
+  };
 
-    const existingOrders = JSON.parse(localStorage.getItem("orders")) || [];
-    existingOrders.push(order);
-    localStorage.setItem("orders", JSON.stringify(existingOrders));
-
+  try {
+    await addDoc(collection(db, "orders"), order);
     clearCart();
     alert("Order placed!");
     navigate("/");
-  };
+  } catch (error) {
+    console.error("Error placing order:", error);
+    alert("Failed to place order. Try again.");
+  }
+};
+
 
   return (
     <div className={styles.page}>
