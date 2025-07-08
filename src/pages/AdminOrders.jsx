@@ -1,14 +1,14 @@
-// Updated AdminOrders.jsx with UI styling for order cards
+// Updated AdminOrders.jsx with UI card styling and Firestore syncing
 import { useEffect, useState } from "react";
 import styles from "./AdminOrders.module.css";
 import { db } from "../firebase";
 import {
   collection,
-  onSnapshot,
+  getDocs,
   updateDoc,
   deleteDoc,
   doc,
-  getDocs
+  onSnapshot
 } from "firebase/firestore";
 
 export default function AdminOrders() {
@@ -16,58 +16,55 @@ export default function AdminOrders() {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
-      const orderData = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setOrders(orderData);
+      const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setOrders(fetched);
     });
-
     return () => unsubscribe();
   }, []);
 
-  const toggleServed = async (id, current) => {
-    await updateDoc(doc(db, "orders", id), { served: !current });
-  };
-
-  const clearOrders = async () => {
-    const snapshot = await getDocs(collection(db, "orders"));
-    const batch = snapshot.docs.map((docSnap) => deleteDoc(doc(db, "orders", docSnap.id)));
-    await Promise.all(batch);
-  };
-
-  const total = orders.reduce((sum, order) => {
+  const total = orders.reduce((sum, o) => {
+    if (!o.served) return sum;
     return (
-      sum +
-      order.items.reduce((s, item) => s + item.price * item.quantity, 0)
+      sum + o.items.reduce((s, i) => s + i.price * i.quantity, 0)
     );
   }, 0);
+
+  const handleServe = async (id) => {
+    await updateDoc(doc(db, "orders", id), { served: true });
+  };
+
+  const handleClear = async () => {
+    const servedOrders = orders.filter((o) => o.served);
+    for (const order of servedOrders) {
+      await deleteDoc(doc(db, "orders", order.id));
+    }
+  };
 
   return (
     <div className={styles.page}>
       <h1>Admin Orders</h1>
-      <div className={styles.summary}>
-        <p>Total Sales: ${total.toFixed(2)}</p>
-        <button className={styles.clearButton} onClick={clearOrders}>Clear History</button>
-      </div>
+      <p>Total Sales: ${total.toFixed(2)}</p>
+      <button className={styles.clearButton} onClick={handleClear}>Clear History</button>
 
-      {orders.map((order) => (
-        <div key={order.id} className={styles.card}>
-          <h3>Table: {order.table}</h3>
-          <p>Status: {order.status}</p>
-          <p>Time: {new Date(order.createdAt?.seconds * 1000).toLocaleString()}</p>
-          <ul>
-            {order.items.map((item, idx) => (
-              <li key={idx}>
-                {item.name} x{item.quantity}
-                {item.toppings?.length > 0 && (
-                  <span> (Toppings: {item.toppings.join(", ")})</span>
-                )}
-              </li>
-            ))}
-          </ul>
-          <button onClick={() => toggleServed(order.id, order.served)}>
-            Mark as {order.served ? "Not Served" : "Served"}
-          </button>
-        </div>
-      ))}
+      <div className={styles.ordersList}>
+        {orders.map((order) => (
+          <div key={order.id} className={styles.card}>
+            <h3>Table: {order.table}</h3>
+            <p>Status: {order.status}</p>
+            <p>Time: {order.createdAt?.toDate().toLocaleString()}</p>
+            <ul>
+              {order.items.map((item, idx) => (
+                <li key={idx}>{item.name} x{item.quantity}</li>
+              ))}
+            </ul>
+            {!order.served && (
+              <button className={styles.serveButton} onClick={() => handleServe(order.id)}>
+                Mark as Served
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
