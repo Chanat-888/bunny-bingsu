@@ -1,4 +1,3 @@
-// Updated AdminMenu.jsx with Firestore saving and editing
 import { useState, useEffect } from "react";
 import styles from "./AdminMenu.module.css";
 import { db } from "../firebase";
@@ -6,7 +5,6 @@ import {
   collection,
   addDoc,
   getDocs,
-  onSnapshot,
   doc,
   updateDoc,
   deleteDoc
@@ -24,11 +22,12 @@ export default function AdminMenu() {
   const menuCollection = collection(db, "menu");
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(menuCollection, (snapshot) => {
+    const fetchMenu = async () => {
+      const snapshot = await getDocs(menuCollection);
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMenu(items);
-    });
-    return () => unsubscribe();
+    };
+    fetchMenu();
   }, []);
 
   const handleAddTopping = () => {
@@ -61,8 +60,10 @@ export default function AdminMenu() {
       if (editingId) {
         const ref = doc(db, "menu", editingId);
         await updateDoc(ref, itemData);
+        setMenu(menu.map(item => item.id === editingId ? { id: editingId, ...itemData } : item));
       } else {
-        await addDoc(menuCollection, itemData);
+        const docRef = await addDoc(menuCollection, itemData);
+        setMenu([...menu, { id: docRef.id, ...itemData }]);
       }
       resetForm();
     } catch (error) {
@@ -81,6 +82,7 @@ export default function AdminMenu() {
   const handleDelete = async (id) => {
     try {
       await deleteDoc(doc(db, "menu", id));
+      setMenu(menu.filter(item => item.id !== id));
     } catch (error) {
       console.error("Failed to delete:", error);
     }
@@ -116,14 +118,16 @@ export default function AdminMenu() {
             value={toppingInput}
             onChange={(e) => setToppingInput(e.target.value)}
           />
-          <button onClick={handleAddTopping}>+ Add Topping</button>
+          <button className={styles.addToppingButton} onClick={handleAddTopping}>
+            + Add Topping
+          </button>
         </div>
         <div className={styles.toppingsList}>
           {toppings.map((top, i) => (
             <span key={i}>{top}</span>
           ))}
         </div>
-        <button onClick={handleAddOrUpdateItem}>
+        <button className={styles.saveButton} onClick={handleAddOrUpdateItem}>
           {editingId ? "Update Item" : "Add Menu Item"}
         </button>
       </div>
