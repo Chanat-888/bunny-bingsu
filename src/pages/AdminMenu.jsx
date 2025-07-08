@@ -15,17 +15,23 @@ export default function AdminMenu() {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState("");
-  const [mode, setMode] = useState(""); // 🆕 mode/category
   const [toppingInput, setToppingInput] = useState("");
   const [toppings, setToppings] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [mode, setMode] = useState("");
 
   const menuCollection = collection(db, "menu");
+
+  const modes = [
+    "บิงซูสายไหม", "ขนมปังปิ้ง", "ทวิสเตอร์", "คู่หู",
+    "น้ำผลไม้สกัด", "น้ำผลไม้ปั่น", "Smoothie", "เฟรนช์ฟรายส์",
+    "น้ำอัดลม", "ท็อปปิ้ง"
+  ];
 
   useEffect(() => {
     const fetchMenu = async () => {
       const snapshot = await getDocs(menuCollection);
-      const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMenu(items);
     };
     fetchMenu();
@@ -42,28 +48,29 @@ export default function AdminMenu() {
     setName("");
     setPrice("");
     setImage("");
-    setMode(""); // reset mode too
     setToppings([]);
     setToppingInput("");
     setEditingId(null);
+    setMode("");
   };
 
   const handleAddOrUpdateItem = async () => {
     if (!name || !price || !image || !mode) return;
+
     const itemData = {
       name,
       price: parseFloat(price),
       image,
-      mode,
       toppings,
-      available: true
+      available: true,
+      mode
     };
 
     try {
       if (editingId) {
         const ref = doc(db, "menu", editingId);
         await updateDoc(ref, itemData);
-        setMenu(menu.map((item) => (item.id === editingId ? { id: editingId, ...itemData } : item)));
+        setMenu(menu.map(item => item.id === editingId ? { id: editingId, ...itemData } : item));
       } else {
         const docRef = await addDoc(menuCollection, itemData);
         setMenu([...menu, { id: docRef.id, ...itemData }]);
@@ -78,29 +85,17 @@ export default function AdminMenu() {
     setName(item.name);
     setPrice(item.price);
     setImage(item.image);
-    setMode(item.mode || ""); // load mode
     setToppings(item.toppings || []);
+    setMode(item.mode || "");
     setEditingId(item.id);
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteDoc(doc(db, "menu", id));
-      setMenu(menu.filter((item) => item.id !== id));
+      setMenu(menu.filter(item => item.id !== id));
     } catch (error) {
       console.error("Failed to delete:", error);
-    }
-  };
-
-  const toggleAvailability = async (item) => {
-    const newAvailability = !item.available;
-    try {
-      await updateDoc(doc(db, "menu", item.id), { available: newAvailability });
-      setMenu(menu.map((m) =>
-        m.id === item.id ? { ...m, available: newAvailability } : m
-      ));
-    } catch (err) {
-      console.error("Failed to toggle availability:", err);
     }
   };
 
@@ -127,12 +122,15 @@ export default function AdminMenu() {
           value={image}
           onChange={(e) => setImage(e.target.value)}
         />
-        <input
-          type="text"
-          placeholder="Category (e.g. Ice-cream, Sweets)"
-          value={mode}
-          onChange={(e) => setMode(e.target.value)}
-        />
+
+        {/* Mode dropdown */}
+        <select value={mode} onChange={(e) => setMode(e.target.value)}>
+          <option value="">Select Category</option>
+          {modes.map((m, i) => (
+            <option key={i} value={m}>{m}</option>
+          ))}
+        </select>
+
         <div className={styles.toppingsSection}>
           <input
             type="text"
@@ -144,11 +142,13 @@ export default function AdminMenu() {
             + Add Topping
           </button>
         </div>
+
         <div className={styles.toppingsList}>
           {toppings.map((top, i) => (
             <span key={i}>{top}</span>
           ))}
         </div>
+
         <button className={styles.saveButton} onClick={handleAddOrUpdateItem}>
           {editingId ? "Update Item" : "Add Menu Item"}
         </button>
@@ -160,14 +160,11 @@ export default function AdminMenu() {
             <img src={item.image} alt={item.name} />
             <h3>{item.name}</h3>
             <p>${item.price}</p>
-            <p>Category: {item.mode || "N/A"}</p>
+            <p>Mode: {item.mode}</p>
             <p>Toppings: {item.toppings?.join(", ") || "None"}</p>
             <p>Status: {item.available ? "✅ Available" : "❌ Unavailable"}</p>
             <button onClick={() => handleEdit(item)}>Edit</button>
             <button onClick={() => handleDelete(item.id)}>Delete</button>
-            <button onClick={() => toggleAvailability(item)}>
-              {item.available ? "Mark as Unavailable" : "Mark as Available"}
-            </button>
           </div>
         ))}
       </div>

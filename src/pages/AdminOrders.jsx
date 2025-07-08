@@ -48,7 +48,7 @@ export default function AdminOrders() {
 
       <div className={styles.ordersList}>
         {orders.map((order) => (
-          <div key={order.id} className={styles.card}>
+          <div key={order.id} className={styles.orderCard}>
             <h3>Table: {order.table}</h3>
             <p>Status: {order.status}</p>
             <p>Time: {order.createdAt?.toDate().toLocaleString()}</p>
