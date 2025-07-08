@@ -1,111 +1,146 @@
+// Updated AdminMenu.jsx with Firestore saving and editing
 import { useState, useEffect } from "react";
 import styles from "./AdminMenu.module.css";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc
+} from "firebase/firestore";
 
 export default function AdminMenu() {
-  const [menuItems, setMenuItems] = useState([]);
-  const [newItem, setNewItem] = useState({
-    name: "",
-    price: "",
-    image: "",
-    toppings: "",
-    ready: true,
-  });
+  const [menu, setMenu] = useState([]);
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [image, setImage] = useState("");
+  const [toppingInput, setToppingInput] = useState("");
+  const [toppings, setToppings] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+
+  const menuCollection = collection(db, "menu");
 
   useEffect(() => {
-    const stored = localStorage.getItem("menu");
-    if (stored) {
-      setMenuItems(JSON.parse(stored));
-    }
+    const fetchMenu = async () => {
+      const snapshot = await getDocs(menuCollection);
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMenu(items);
+    };
+    fetchMenu();
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("menu", JSON.stringify(menuItems));
-  }, [menuItems]);
-
-  const handleChange = (e) => {
-    setNewItem({ ...newItem, [e.target.name]: e.target.value });
+  const handleAddTopping = () => {
+    if (toppingInput.trim()) {
+      setToppings([...toppings, toppingInput.trim()]);
+      setToppingInput("");
+    }
   };
 
-  const handleAdd = () => {
-    const toppingsArray = newItem.toppings
-      ? newItem.toppings.split(",").map((t) => t.trim())
-      : [];
+  const resetForm = () => {
+    setName("");
+    setPrice("");
+    setImage("");
+    setToppings([]);
+    setToppingInput("");
+    setEditingId(null);
+  };
 
-    const item = {
-      id: Date.now(),
-      name: newItem.name,
-      price: parseFloat(newItem.price),
-      image: newItem.image,
-      toppings: toppingsArray,
-      ready: true,
+  const handleAddOrUpdateItem = async () => {
+    if (!name || !price || !image) return;
+    const itemData = {
+      name,
+      price: parseFloat(price),
+      image,
+      toppings,
+      available: true
     };
 
-    setMenuItems([...menuItems, item]);
-    setNewItem({ name: "", price: "", image: "", toppings: "", ready: true });
+    try {
+      if (editingId) {
+        const ref = doc(db, "menu", editingId);
+        await updateDoc(ref, itemData);
+        setMenu(menu.map(item => item.id === editingId ? { id: editingId, ...itemData } : item));
+      } else {
+        const docRef = await addDoc(menuCollection, itemData);
+        setMenu([...menu, { id: docRef.id, ...itemData }]);
+      }
+      resetForm();
+    } catch (error) {
+      console.error("Error saving item:", error);
+    }
   };
 
-  const toggleReady = (id) => {
-    const updated = menuItems.map((item) =>
-      item.id === id ? { ...item, ready: !item.ready } : item
-    );
-    setMenuItems(updated);
+  const handleEdit = (item) => {
+    setName(item.name);
+    setPrice(item.price);
+    setImage(item.image);
+    setToppings(item.toppings || []);
+    setEditingId(item.id);
   };
 
-  const handleDelete = (id) => {
-    const updated = menuItems.filter((item) => item.id !== id);
-    setMenuItems(updated);
+  const handleDelete = async (id) => {
+    try {
+      await deleteDoc(doc(db, "menu", id));
+      setMenu(menu.filter(item => item.id !== id));
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    }
   };
 
   return (
     <div className={styles.page}>
-      <h1>Admin Menu Management</h1>
+      <h1>Admin Menu</h1>
 
       <div className={styles.form}>
         <input
-          name="name"
-          value={newItem.name}
-          onChange={handleChange}
-          placeholder="Item name"
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
         />
         <input
-          name="price"
-          value={newItem.price}
-          onChange={handleChange}
+          type="text"
           placeholder="Price"
-          type="number"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
         />
         <input
-          name="image"
-          value={newItem.image}
-          onChange={handleChange}
+          type="text"
           placeholder="Image URL"
+          value={image}
+          onChange={(e) => setImage(e.target.value)}
         />
-        <input
-          name="toppings"
-          value={newItem.toppings}
-          onChange={handleChange}
-          placeholder="Toppings (comma-separated)"
-        />
-        <button onClick={handleAdd}>Add Menu Item</button>
+        <div className={styles.toppingsSection}>
+          <input
+            type="text"
+            placeholder="Add Topping"
+            value={toppingInput}
+            onChange={(e) => setToppingInput(e.target.value)}
+          />
+          <button onClick={handleAddTopping}>+ Add Topping</button>
+        </div>
+        <div className={styles.toppingsList}>
+          {toppings.map((top, i) => (
+            <span key={i}>{top}</span>
+          ))}
+        </div>
+        <button onClick={handleAddOrUpdateItem}>
+          {editingId ? "Update Item" : "Add Menu Item"}
+        </button>
       </div>
 
-      <div className={styles.list}>
-        {menuItems.map((item) => (
-          <div key={item.id} className={styles.item}>
+      <div className={styles.menuList}>
+        {menu.map((item, index) => (
+          <div key={index} className={styles.card}>
             <img src={item.image} alt={item.name} />
-            <div>
-              <strong>{item.name}</strong> - ${item.price.toFixed(2)}
-              <p>Status: {item.ready ? "✅ Ready" : "❌ Not Ready"}</p>
-              {item.toppings.length > 0 && (
-                <p>Toppings: {item.toppings.join(", ")}</p>
-              )}
-            </div>
-            <div className={styles.actions}>
-              <button onClick={() => toggleReady(item.id)}>
-                {item.ready ? "Mark Not Ready" : "Mark Ready"}
-              </button>
-              <button onClick={() => handleDelete(item.id)}>Delete</button>
-            </div>
+            <h3>{item.name}</h3>
+            <p>${item.price}</p>
+            <p>Toppings: {item.toppings?.join(", ") || "None"}</p>
+            <p>Status: {item.available ? "✅ Available" : "❌ Unavailable"}</p>
+            <button onClick={() => handleEdit(item)}>Edit</button>
+            <button onClick={() => handleDelete(item.id)}>Delete</button>
           </div>
         ))}
       </div>

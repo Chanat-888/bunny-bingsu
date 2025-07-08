@@ -1,23 +1,30 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import styles from "./MenuPage.module.css";
 import { useCart } from "../context/CartContext";
 import { FiShoppingCart } from "react-icons/fi";
-import styles from "./MenuPage.module.css";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
 
 export default function MenuPage() {
   const { cart } = useCart();
   const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
-  const [products, setProducts] = useState([]);
+
+  const [menu, setMenu] = useState([]);
 
   useEffect(() => {
-    const stored = localStorage.getItem("menu");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Show only items that are "ready"
-      const readyItems = parsed.filter((item) => item.ready);
-      setProducts(readyItems);
-    }
+    const fetchMenu = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "menu"));
+        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setMenu(items.filter(item => item.available)); // only show available items
+      } catch (error) {
+        console.error("Failed to fetch menu:", error);
+      }
+    };
+
+    fetchMenu();
   }, []);
 
   return (
@@ -32,7 +39,7 @@ export default function MenuPage() {
       <h1 className={styles.title}>Menu</h1>
 
       <div className={styles.grid}>
-        {products.map((item) => (
+        {menu.map((item) => (
           <Link key={item.id} to={`/product/${item.id}`} className={styles.link}>
             <ProductCard {...item} />
           </Link>

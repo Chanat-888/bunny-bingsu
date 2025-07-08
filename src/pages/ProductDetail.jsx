@@ -1,25 +1,31 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import styles from "./ProductDetail.module.css";
 import { useCart } from "../context/CartContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 export default function ProductDetail() {
   const { id } = useParams();
   const { addToCart } = useCart();
-
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedToppings, setSelectedToppings] = useState([]);
 
-  // Load product from localStorage by ID
   useEffect(() => {
-    const stored = localStorage.getItem("menu");
-    if (stored) {
-      const menu = JSON.parse(stored);
-      const item = menu.find((p) => p.id === parseInt(id));
-      setProduct(item);
-    }
+    const fetchProduct = async () => {
+      const docRef = doc(db, "menu", id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setProduct({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        console.error("Product not found");
+      }
+    };
+    fetchProduct();
   }, [id]);
+
+  if (!product) return <p>Loading product...</p>;
 
   const toggleTopping = (topping) => {
     setSelectedToppings((prev) =>
@@ -30,27 +36,19 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = () => {
-    if (!product) return;
-
     const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price,
-      image: product.image,
       quantity,
       toppings: selectedToppings,
     };
-
     addToCart(cartItem);
     alert("Added to cart!");
   };
 
-  if (!product) return <p>Product not found.</p>;
-
   return (
     <div className={styles.page}>
-      <Link to="/" className={styles.backButton}>← Back to Menu</Link>
-
       <img src={product.image} alt={product.name} className={styles.image} />
       <h1 className={styles.name}>{product.name}</h1>
       <p className={styles.price}>${product.price.toFixed(2)}</p>
