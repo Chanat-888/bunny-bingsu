@@ -64,7 +64,7 @@ export default function ProductDetail() {
 
           {product.toppings?.length > 0 && (
             <div className={styles.toppings}>
-              <h4>Choose Toppings:</h4>
+              <h4>Choose Sauce:</h4>
               <div className={styles.toppingButtons}>
                 {product.toppings.map((top, i) => (
                   <button

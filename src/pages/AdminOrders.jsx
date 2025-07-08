@@ -1,4 +1,4 @@
-// Updated AdminOrders.jsx with UI card styling and Firestore syncing
+// Updated AdminOrders.jsx with UI card styling, Firestore syncing, and Toppings display
 import { useEffect, useState } from "react";
 import styles from "./AdminOrders.module.css";
 import { db } from "../firebase";
@@ -54,7 +54,14 @@ export default function AdminOrders() {
             <p>Time: {order.createdAt?.toDate().toLocaleString()}</p>
             <ul>
               {order.items.map((item, idx) => (
-                <li key={idx}>{item.name} x{item.quantity}</li>
+                <li key={idx}>
+                  {item.name} x{item.quantity}
+                  {item.toppings?.length > 0 && (
+                    <div style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                      Toppings: {item.toppings.join(", ")}
+                    </div>
+                  )}
+                </li>
               ))}
             </ul>
             {!order.served && (

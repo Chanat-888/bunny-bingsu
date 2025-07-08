@@ -66,7 +66,7 @@ export default function CheckoutPage() {
                   <strong>{item.name}</strong> x{item.quantity}
                   {item.toppings.length > 0 && (
                     <div className={styles.toppings}>
-                      Toppings: {item.toppings.join(", ")}
+                      Sauce: {item.toppings.join(", ")}
                     </div>
                   )}
                   <button
