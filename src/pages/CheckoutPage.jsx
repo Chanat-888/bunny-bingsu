@@ -5,14 +5,11 @@ import { useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 
-
 export default function CheckoutPage() {
   const { cart, clearCart, setCart } = useCart();
   const navigate = useNavigate();
   const storedTable = localStorage.getItem("tableNumber") || "";
   const [tableNumber, setTableNumber] = useState(storedTable);
-
-
 
   const handleRemove = (indexToRemove) => {
     const updated = [...cart];
@@ -21,34 +18,37 @@ export default function CheckoutPage() {
   };
 
   const total = cart
-    .reduce((sum, item) => sum + item.quantity * item.price, 0)
+    .reduce(
+      (sum, item) =>
+        sum + item.quantity * (item.price + (item.extraPrice || 0)),
+      0
+    )
     .toFixed(2);
 
   const handleCheckout = async () => {
-  if (!tableNumber) {
-    alert("Please enter table number");
-    return;
-  }
+    if (!tableNumber) {
+      alert("Please enter table number");
+      return;
+    }
 
-  const order = {
-    table: tableNumber,
-    items: cart,
-    createdAt: Timestamp.now(),
-    status: "pending", // You can change to "completed" if needed
-    served: false
+    const order = {
+      table: tableNumber,
+      items: cart,
+      createdAt: Timestamp.now(),
+      status: "pending",
+      served: false
+    };
+
+    try {
+      await addDoc(collection(db, "orders"), order);
+      clearCart();
+      alert("Order placed!");
+      navigate("/");
+    } catch (error) {
+      console.error("Error placing order:", error);
+      alert("Failed to place order. Try again.");
+    }
   };
-
-  try {
-    await addDoc(collection(db, "orders"), order);
-    clearCart();
-    alert("Order placed!");
-    navigate("/");
-  } catch (error) {
-    console.error("Error placing order:", error);
-    alert("Failed to place order. Try again.");
-  }
-};
-
 
   return (
     <div className={styles.page}>
@@ -61,25 +61,38 @@ export default function CheckoutPage() {
         <>
           <div className={styles.list}>
             {cart.map((item, index) => (
-  <div key={index} className={styles.item}>
-    <div>
-      <strong>{item.name}</strong> x{item.quantity}
-      {(item.sauce || []).length > 0 && (
-        <div>
-          Sauces: {item.sauce.join(", ")}
-        </div>
-      )}
-      <button
-        className={styles.removeButton}
-        onClick={() => handleRemove(index)}
-      >
-        Remove
-      </button>
-    </div>
-    <div>${(item.quantity * item.price).toFixed(2)}</div>
-  </div>
-))}
+              <div key={index} className={styles.item}>
+                <div>
+                  <strong>{item.name}</strong> x{item.quantity}
 
+                  {(item.sauces || []).length > 0 && (
+                    <div>Sauces: {item.sauces.join(", ")}</div>
+                  )}
+
+                  {(item.extras || []).length > 0 && (
+                    <div>
+                      Extras:{" "}
+                      {item.extras
+                        .map((ex) => `${ex.name} (+$${ex.price})`)
+                        .join(", ")}
+                    </div>
+                  )}
+
+                  <button
+                    className={styles.removeButton}
+                    onClick={() => handleRemove(index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div>
+                  ${(
+                    item.quantity *
+                    (item.price + (item.extraPrice || 0))
+                  ).toFixed(2)}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className={styles.total}>
@@ -88,14 +101,14 @@ export default function CheckoutPage() {
           </div>
 
           <div className={styles.tableRow}>
-  <label className={styles.tableLabel}>Table:</label>
-  <input
-    type="text"
-    value={tableNumber}
-    onChange={(e) => setTableNumber(e.target.value)}
-    className={styles.input}
-  />
-</div>
+            <label className={styles.tableLabel}>Table:</label>
+            <input
+              type="text"
+              value={tableNumber}
+              onChange={(e) => setTableNumber(e.target.value)}
+              className={styles.input}
+            />
+          </div>
 
           <button className={styles.button} onClick={handleCheckout}>
             Place Order

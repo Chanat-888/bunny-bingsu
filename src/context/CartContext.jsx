@@ -13,12 +13,26 @@ export function CartProvider({ children }) {
   }, [cart]);
 
   const addToCart = (item) => {
-    setCart((prev) => [...prev, item]);
+    setCart((prev) => {
+      const existingIndex = prev.findIndex(
+        (i) =>
+          i.id === item.id &&
+          JSON.stringify(i.sauces || []) === JSON.stringify(item.sauces || []) &&
+          JSON.stringify(i.flavors || []) === JSON.stringify(item.flavors || []) &&
+          JSON.stringify(i.extras || []) === JSON.stringify(item.extras || [])
+      );
+
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += item.quantity;
+        return updated;
+      } else {
+        return [...prev, item];
+      }
+    });
   };
 
-  const clearCart = () => {
-    setCart([]);
-  };
+  const clearCart = () => setCart([]);
 
   return (
     <CartContext.Provider value={{ cart, setCart, addToCart, clearCart }}>

@@ -11,6 +11,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedSauce, setSelectedSauce] = useState([]);
+  const [selectedExtras, setSelectedExtras] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -38,14 +39,26 @@ export default function ProductDetail() {
     }
   };
 
+  const toggleExtra = (extra) => {
+    const found = selectedExtras.find(e => e.name === extra.name);
+    if (found) {
+      setSelectedExtras(selectedExtras.filter(e => e.name !== extra.name));
+    } else {
+      setSelectedExtras([...selectedExtras, extra]);
+    }
+  };
+
   const handleAdd = () => {
     if (product) {
+      const extraTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
       addToCart({
         id: product.id,
         name: product.name,
         price: product.price,
         quantity,
-        sauce: selectedSauce
+        sauces: selectedSauce,
+        extras: selectedExtras,
+        extraPrice: extraTotal
       });
     }
   };
@@ -78,6 +91,29 @@ export default function ProductDetail() {
                     {sauce}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {product.extras?.length > 0 && (
+            <div className={styles.sauces}>
+              <h4>Choose Extras:</h4>
+              <div className={styles.sauceButtons}>
+                {product.extras.map((extra, i) => {
+                  const selected = selectedExtras.find(e => e.name === extra.name);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`${styles.sauceButton} ${
+                        selected ? styles.selected : ""
+                      }`}
+                      onClick={() => toggleExtra(extra)}
+                    >
+                      {extra.name} (+${extra.price})
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

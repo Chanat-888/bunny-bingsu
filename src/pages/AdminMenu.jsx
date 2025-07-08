@@ -10,8 +10,6 @@ import {
   deleteDoc
 } from "firebase/firestore";
 
-// ...[imports remain the same]
-
 export default function AdminMenu() {
   const [menu, setMenu] = useState([]);
   const [name, setName] = useState("");
@@ -19,6 +17,11 @@ export default function AdminMenu() {
   const [image, setImage] = useState("");
   const [sauceInput, setSauceInput] = useState("");
   const [sauces, setSauces] = useState([]);
+  const [flavorInput, setFlavorInput] = useState("");
+  const [flavors, setFlavors] = useState([]);
+  const [extraName, setExtraName] = useState("");
+  const [extraPrice, setExtraPrice] = useState("");
+  const [extras, setExtras] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [mode, setMode] = useState("");
 
@@ -31,21 +34,13 @@ export default function AdminMenu() {
   ];
 
   useEffect(() => {
-  const fetchMenu = async () => {
-    const snapshot = await getDocs(menuCollection);
-    const items = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        sauces: data.sauces || [] // ✅ backfill if missing
-      };
-    });
-    setMenu(items);
-  };
-  fetchMenu();
-}, []);
-
+    const fetchMenu = async () => {
+      const snapshot = await getDocs(menuCollection);
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMenu(items);
+    };
+    fetchMenu();
+  }, []);
 
   const handleAddSauce = () => {
     if (sauceInput.trim()) {
@@ -54,12 +49,32 @@ export default function AdminMenu() {
     }
   };
 
+  const handleAddFlavor = () => {
+    if (flavorInput.trim()) {
+      setFlavors([...flavors, flavorInput.trim()]);
+      setFlavorInput("");
+    }
+  };
+
+  const handleAddExtra = () => {
+    if (extraName.trim() && extraPrice.trim()) {
+      setExtras([...extras, { name: extraName.trim(), price: parseFloat(extraPrice) }]);
+      setExtraName("");
+      setExtraPrice("");
+    }
+  };
+
   const resetForm = () => {
     setName("");
     setPrice("");
     setImage("");
     setSauces([]);
+    setFlavors([]);
+    setExtras([]);
     setSauceInput("");
+    setFlavorInput("");
+    setExtraName("");
+    setExtraPrice("");
     setEditingId(null);
     setMode("");
   };
@@ -71,7 +86,9 @@ export default function AdminMenu() {
       name,
       price: parseFloat(price),
       image,
-      sauces: sauces.length > 0 ? sauces : [],
+      sauces,
+      flavors,
+      extras,
       available: true,
       mode
     };
@@ -96,6 +113,8 @@ export default function AdminMenu() {
     setPrice(item.price);
     setImage(item.image);
     setSauces(item.sauces || []);
+    setFlavors(item.flavors || []);
+    setExtras(item.extras || []);
     setMode(item.mode || "");
     setEditingId(item.id);
   };
@@ -109,15 +128,8 @@ export default function AdminMenu() {
     }
   };
 
-  const toggleAvailability = async (item) => {
-    try {
-      const ref = doc(db, "menu", item.id);
-      await updateDoc(ref, { available: !item.available });
-      setMenu(menu.map(m => m.id === item.id ? { ...m, available: !m.available } : m));
-    } catch (error) {
-      console.error("Failed to toggle availability:", error);
-    }
-  };
+  const showFlavorInput = mode === "คู่หู" || mode === "ทวิสเตอร์";
+  const showExtraInput = mode === "น้ำผลไม้ปั่น";
 
   return (
     <div className={styles.page}>
@@ -143,7 +155,6 @@ export default function AdminMenu() {
           onChange={(e) => setImage(e.target.value)}
         />
 
-        {/* Mode dropdown */}
         <select value={mode} onChange={(e) => setMode(e.target.value)}>
           <option value="">Select Category</option>
           {modes.map((m, i) => (
@@ -151,21 +162,61 @@ export default function AdminMenu() {
           ))}
         </select>
 
-        <div className={styles.saucesSection}>
+        {/* Sauce */}
+        <div className={styles.toppingsSection}>
           <input
             type="text"
             placeholder="Add Sauce"
             value={sauceInput}
             onChange={(e) => setSauceInput(e.target.value)}
           />
-          <button className={styles.addSauceButton} onClick={handleAddSauce}>
+          <button className={styles.addToppingButton} onClick={handleAddSauce}>
             + Add Sauce
           </button>
         </div>
 
-        <div className={styles.saucesList}>
-          {sauces.map((sauce, i) => (
-            <span key={i}>{sauce}</span>
+        {/* Flavor */}
+        {showFlavorInput && (
+          <div className={styles.toppingsSection}>
+            <input
+              type="text"
+              placeholder="Add Flavor"
+              value={flavorInput}
+              onChange={(e) => setFlavorInput(e.target.value)}
+            />
+            <button className={styles.addToppingButton} onClick={handleAddFlavor}>
+              + Add Flavor
+            </button>
+          </div>
+        )}
+
+        {/* Extra */}
+        {showExtraInput && (
+          <div className={styles.toppingsSection}>
+            <input
+              type="text"
+              placeholder="Extra Name"
+              value={extraName}
+              onChange={(e) => setExtraName(e.target.value)}
+            />
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Extra Price"
+              value={extraPrice}
+              onChange={(e) => setExtraPrice(e.target.value)}
+            />
+            <button className={styles.addToppingButton} onClick={handleAddExtra}>
+              + Add Extra
+            </button>
+          </div>
+        )}
+
+        <div className={styles.toppingsList}>
+          {sauces.map((s, i) => <span key={i}>{s}</span>)}
+          {flavors.map((f, i) => <span key={i}>Flavor: {f}</span>)}
+          {extras.map((e, i) => (
+            <span key={i}>Extra: {e.name} (+${e.price.toFixed(2)})</span>
           ))}
         </div>
 
@@ -182,12 +233,16 @@ export default function AdminMenu() {
             <p>${item.price}</p>
             <p>Mode: {item.mode}</p>
             <p>Sauce: {item.sauces?.join(", ") || "None"}</p>
+            {item.flavors && <p>Flavor: {item.flavors.join(", ")}</p>}
+            {item.extras && item.extras.length > 0 && (
+              <p>
+                Extras:{" "}
+                {item.extras.map((ex, i) => `${ex.name} ($${ex.price})`).join(", ")}
+              </p>
+            )}
             <p>Status: {item.available ? "✅ Available" : "❌ Unavailable"}</p>
             <button onClick={() => handleEdit(item)}>Edit</button>
             <button onClick={() => handleDelete(item.id)}>Delete</button>
-            <button onClick={() => toggleAvailability(item)}>
-              {item.available ? "Mark Unavailable" : "Mark Available"}
-            </button>
           </div>
         ))}
       </div>
