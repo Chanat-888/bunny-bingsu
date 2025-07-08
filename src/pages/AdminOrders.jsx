@@ -1,44 +1,32 @@
 import { useEffect, useState } from "react";
 import styles from "./AdminOrders.module.css";
 import { db } from "../firebase";
-import {
-  collection,
-  onSnapshot,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, query, orderBy } from "firebase/firestore";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
-      const ordersFromDb = snapshot.docs.map((doc) => ({
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      setOrders(ordersFromDb);
+      setOrders(ordersData);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const markAsCompleted = async (id) => {
-    await updateDoc(doc(db, "orders", id), {
-      status: "completed",
-    });
+  const toggleServed = async (order) => {
+    const ref = doc(db, "orders", order.id);
+    await updateDoc(ref, { served: !order.served });
   };
 
-  const toggleServed = async (id, current) => {
-    await updateDoc(doc(db, "orders", id), {
-      served: !current,
-    });
-  };
-
-  const getTotal = (items) => {
-    return items
-      .reduce((sum, item) => sum + item.price * item.quantity, 0)
-      .toFixed(2);
+  const markAsCompleted = async (order) => {
+    const ref = doc(db, "orders", order.id);
+    await updateDoc(ref, { status: "completed" });
   };
 
   return (
@@ -50,10 +38,10 @@ export default function AdminOrders() {
         orders.map((order) => (
           <div key={order.id} className={styles.orderCard}>
             <h3>🪑 Table {order.table}</h3>
-            <p>🕒 {order.createdAt?.toDate?.().toLocaleString?.() || "Time not available"}</p>
+            <p>🕒 {order.createdAt?.toDate().toLocaleString()}</p>
             <ul>
-              {order.items.map((item, index) => (
-                <li key={index}>
+              {order.items.map((item, i) => (
+                <li key={i}>
                   {item.quantity} × {item.name}
                   {item.toppings?.length > 0 && (
                     <span> with {item.toppings.join(", ")}</span>
@@ -61,20 +49,16 @@ export default function AdminOrders() {
                 </li>
               ))}
             </ul>
-            <p><strong>Total:</strong> ${getTotal(order.items)}</p>
             <p>Status: {order.status}</p>
             <p>Served: {order.served ? "✅ Yes" : "❌ No"}</p>
 
-            <div className={styles.actions}>
-              {order.status !== "completed" && (
-                <button onClick={() => markAsCompleted(order.id)}>
-                  Mark as Completed
-                </button>
-              )}
-              <button onClick={() => toggleServed(order.id, order.served)}>
-                Mark as {order.served ? "Not Served" : "Served"}
-              </button>
-            </div>
+            <button onClick={() => toggleServed(order)}>
+              Mark as {order.served ? "Not Served" : "Served"}
+            </button>
+
+            {order.status !== "completed" && (
+              <button onClick={() => markAsCompleted(order)}>Mark as Completed</button>
+            )}
           </div>
         ))
       )}
