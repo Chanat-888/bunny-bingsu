@@ -17,7 +17,13 @@ export default function AdminOrders() {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
       const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setOrders(fetched);
+      // Sort by createdAt descending (latest first)
+      const sorted = [...fetched].sort((a, b) => {
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      });
+      setOrders(sorted);
     });
     return () => unsubscribe();
   }, []);

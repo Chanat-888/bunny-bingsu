@@ -10,13 +10,15 @@ import {
   deleteDoc
 } from "firebase/firestore";
 
+// ...[imports remain the same]
+
 export default function AdminMenu() {
   const [menu, setMenu] = useState([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState("");
-  const [toppingInput, setToppingInput] = useState("");
-  const [toppings, setToppings] = useState([]);
+  const [sauceInput, setSauceInput] = useState("");
+  const [sauces, setSauces] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [mode, setMode] = useState("");
 
@@ -37,10 +39,10 @@ export default function AdminMenu() {
     fetchMenu();
   }, []);
 
-  const handleAddTopping = () => {
-    if (toppingInput.trim()) {
-      setToppings([...toppings, toppingInput.trim()]);
-      setToppingInput("");
+  const handleAddSauce = () => {
+    if (sauceInput.trim()) {
+      setSauces([...sauces, sauceInput.trim()]);
+      setSauceInput("");
     }
   };
 
@@ -48,8 +50,8 @@ export default function AdminMenu() {
     setName("");
     setPrice("");
     setImage("");
-    setToppings([]);
-    setToppingInput("");
+    setSauces([]);
+    setSauceInput("");
     setEditingId(null);
     setMode("");
   };
@@ -61,7 +63,7 @@ export default function AdminMenu() {
       name,
       price: parseFloat(price),
       image,
-      toppings,
+      sauces,
       available: true,
       mode
     };
@@ -85,7 +87,7 @@ export default function AdminMenu() {
     setName(item.name);
     setPrice(item.price);
     setImage(item.image);
-    setToppings(item.toppings || []);
+    setSauces(item.sauces || []);
     setMode(item.mode || "");
     setEditingId(item.id);
   };
@@ -96,6 +98,16 @@ export default function AdminMenu() {
       setMenu(menu.filter(item => item.id !== id));
     } catch (error) {
       console.error("Failed to delete:", error);
+    }
+  };
+
+  const toggleAvailability = async (item) => {
+    try {
+      const ref = doc(db, "menu", item.id);
+      await updateDoc(ref, { available: !item.available });
+      setMenu(menu.map(m => m.id === item.id ? { ...m, available: !m.available } : m));
+    } catch (error) {
+      console.error("Failed to toggle availability:", error);
     }
   };
 
@@ -134,18 +146,18 @@ export default function AdminMenu() {
         <div className={styles.toppingsSection}>
           <input
             type="text"
-            placeholder="Add Topping"
-            value={toppingInput}
-            onChange={(e) => setToppingInput(e.target.value)}
+            placeholder="Add Sauce"
+            value={sauceInput}
+            onChange={(e) => setSauceInput(e.target.value)}
           />
-          <button className={styles.addToppingButton} onClick={handleAddTopping}>
-            + Add Topping
+          <button className={styles.addToppingButton} onClick={handleAddSauce}>
+            + Add Sauce
           </button>
         </div>
 
         <div className={styles.toppingsList}>
-          {toppings.map((top, i) => (
-            <span key={i}>{top}</span>
+          {sauces.map((sauce, i) => (
+            <span key={i}>{sauce}</span>
           ))}
         </div>
 
@@ -161,10 +173,13 @@ export default function AdminMenu() {
             <h3>{item.name}</h3>
             <p>${item.price}</p>
             <p>Mode: {item.mode}</p>
-            <p>Toppings: {item.toppings?.join(", ") || "None"}</p>
+            <p>Sauce: {item.sauces?.join(", ") || "None"}</p>
             <p>Status: {item.available ? "✅ Available" : "❌ Unavailable"}</p>
             <button onClick={() => handleEdit(item)}>Edit</button>
             <button onClick={() => handleDelete(item.id)}>Delete</button>
+            <button onClick={() => toggleAvailability(item)}>
+              {item.available ? "Mark Unavailable" : "Mark Available"}
+            </button>
           </div>
         ))}
       </div>
