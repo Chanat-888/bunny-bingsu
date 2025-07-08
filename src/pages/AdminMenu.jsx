@@ -1,11 +1,10 @@
-// Updated AdminMenu.jsx with Firestore saving and editing
 import { useState, useEffect } from "react";
 import styles from "./AdminMenu.module.css";
 import { db } from "../firebase";
 import {
   collection,
   addDoc,
-  getDocs,
+  onSnapshot,
   doc,
   updateDoc,
   deleteDoc
@@ -23,12 +22,15 @@ export default function AdminMenu() {
   const menuCollection = collection(db, "menu");
 
   useEffect(() => {
-    const fetchMenu = async () => {
-      const snapshot = await getDocs(menuCollection);
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const unsubscribe = onSnapshot(menuCollection, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data()
+      }));
       setMenu(items);
-    };
-    fetchMenu();
+    });
+
+    return () => unsubscribe(); // cleanup listener
   }, []);
 
   const handleAddTopping = () => {
@@ -48,10 +50,20 @@ export default function AdminMenu() {
   };
 
   const handleAddOrUpdateItem = async () => {
-    if (!name || !price || !image) return;
+    if (!name || !price || !image) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice)) {
+      alert("Price must be a number.");
+      return;
+    }
+
     const itemData = {
       name,
-      price: parseFloat(price),
+      price: parsedPrice,
       image,
       toppings,
       available: true
@@ -59,12 +71,9 @@ export default function AdminMenu() {
 
     try {
       if (editingId) {
-        const ref = doc(db, "menu", editingId);
-        await updateDoc(ref, itemData);
-        setMenu(menu.map(item => item.id === editingId ? { id: editingId, ...itemData } : item));
+        await updateDoc(doc(db, "menu", editingId), itemData);
       } else {
-        const docRef = await addDoc(menuCollection, itemData);
-        setMenu([...menu, { id: docRef.id, ...itemData }]);
+        await addDoc(menuCollection, itemData);
       }
       resetForm();
     } catch (error) {
@@ -74,7 +83,7 @@ export default function AdminMenu() {
 
   const handleEdit = (item) => {
     setName(item.name);
-    setPrice(item.price);
+    setPrice(item.price.toString());
     setImage(item.image);
     setToppings(item.toppings || []);
     setEditingId(item.id);
@@ -83,7 +92,6 @@ export default function AdminMenu() {
   const handleDelete = async (id) => {
     try {
       await deleteDoc(doc(db, "menu", id));
-      setMenu(menu.filter(item => item.id !== id));
     } catch (error) {
       console.error("Failed to delete:", error);
     }
@@ -132,8 +140,8 @@ export default function AdminMenu() {
       </div>
 
       <div className={styles.menuList}>
-        {menu.map((item, index) => (
-          <div key={index} className={styles.card}>
+        {menu.map((item) => (
+          <div key={item.id} className={styles.card}>
             <img src={item.image} alt={item.name} />
             <h3>{item.name}</h3>
             <p>${item.price}</p>
