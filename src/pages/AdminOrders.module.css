@@ -1,0 +1,62 @@
+.page {
+  max-width: 800px;
+  margin: auto;
+  padding: 2rem;
+}
+
+.orderCard {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background-color: #f9f9f9;
+}
+
+.orderCard h3 {
+  margin-top: 0;
+}
+
+.orderCard ul {
+  padding-left: 1.2rem;
+}
+
+button {
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.clearButton {
+  background: #cc0000;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.clearButton:hover {
+  background: #aa0000;
+}
+
+.revenueBox {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #e9f7ef;
+  border: 1px solid #c4e3cb;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #2d6a4f;
+}

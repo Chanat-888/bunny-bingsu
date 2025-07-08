@@ -1,0 +1,59 @@
+.page {
+  padding: 1rem;
+  max-width: 400px;
+  margin: auto;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.list {
+  margin-bottom: 1rem;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.2rem;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #ff5c5c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.backButton {
+  display: inline-block;
+  margin: 1rem 0;
+  color: #ff5c5c;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.removeButton {
+  margin-top: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #ff5c5c;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
