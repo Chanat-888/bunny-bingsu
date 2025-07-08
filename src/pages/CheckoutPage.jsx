@@ -64,11 +64,12 @@ export default function CheckoutPage() {
               <div key={index} className={styles.item}>
                 <div>
                   <strong>{item.name}</strong> x{item.quantity}
-                  {item.sauces.length > 0 && (
-                    <div className={styles.sauces}>
-                      Sauce: {item.sauces.join(", ")}
-                    </div>
-                  )}
+                  {(item.sauces || []).length > 0 && (
+  <div>
+    Sauces: {item.sauces.join(", ")}
+  </div>
+)}
+
                   <button
                     className={styles.removeButton}
                     onClick={() => handleRemove(index)}
