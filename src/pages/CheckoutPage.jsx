@@ -61,25 +61,25 @@ export default function CheckoutPage() {
         <>
           <div className={styles.list}>
             {cart.map((item, index) => (
-              <div key={index} className={styles.item}>
-                <div>
-                  <strong>{item.name}</strong> x{item.quantity}
-                  {(item.sauces || []).length > 0 && (
-  <div>
-    Sauces: {item.sauces.join(", ")}
+  <div key={index} className={styles.item}>
+    <div>
+      <strong>{item.name}</strong> x{item.quantity}
+      {(item.sauce || []).length > 0 && (
+        <div>
+          Sauces: {item.sauce.join(", ")}
+        </div>
+      )}
+      <button
+        className={styles.removeButton}
+        onClick={() => handleRemove(index)}
+      >
+        Remove
+      </button>
+    </div>
+    <div>${(item.quantity * item.price).toFixed(2)}</div>
   </div>
-)}
+))}
 
-                  <button
-                    className={styles.removeButton}
-                    onClick={() => handleRemove(index)}
-                  >
-                    Remove
-                  </button>
-                </div>
-                <div>${(item.quantity * item.price).toFixed(2)}</div>
-              </div>
-            ))}
           </div>
 
           <div className={styles.total}>
