@@ -31,13 +31,21 @@ export default function AdminMenu() {
   ];
 
   useEffect(() => {
-    const fetchMenu = async () => {
-      const snapshot = await getDocs(menuCollection);
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMenu(items);
-    };
-    fetchMenu();
-  }, []);
+  const fetchMenu = async () => {
+    const snapshot = await getDocs(menuCollection);
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        sauces: data.sauces || [] // ✅ backfill if missing
+      };
+    });
+    setMenu(items);
+  };
+  fetchMenu();
+}, []);
+
 
   const handleAddSauce = () => {
     if (sauceInput.trim()) {
@@ -63,7 +71,7 @@ export default function AdminMenu() {
       name,
       price: parseFloat(price),
       image,
-      sauces,
+      sauces: sauces.length > 0 ? sauces : [],
       available: true,
       mode
     };
@@ -143,19 +151,19 @@ export default function AdminMenu() {
           ))}
         </select>
 
-        <div className={styles.toppingsSection}>
+        <div className={styles.saucesSection}>
           <input
             type="text"
             placeholder="Add Sauce"
             value={sauceInput}
             onChange={(e) => setSauceInput(e.target.value)}
           />
-          <button className={styles.addToppingButton} onClick={handleAddSauce}>
+          <button className={styles.addSauceButton} onClick={handleAddSauce}>
             + Add Sauce
           </button>
         </div>
 
-        <div className={styles.toppingsList}>
+        <div className={styles.saucesList}>
           {sauces.map((sauce, i) => (
             <span key={i}>{sauce}</span>
           ))}

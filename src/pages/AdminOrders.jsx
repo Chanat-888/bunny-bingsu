@@ -1,4 +1,3 @@
-// Updated AdminOrders.jsx with UI card styling, Firestore syncing, and Toppings display
 import { useEffect, useState } from "react";
 import styles from "./AdminOrders.module.css";
 import { db } from "../firebase";
@@ -17,7 +16,6 @@ export default function AdminOrders() {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
       const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      // Sort by createdAt descending (latest first)
       const sorted = [...fetched].sort((a, b) => {
         const aTime = a.createdAt?.toMillis?.() || 0;
         const bTime = b.createdAt?.toMillis?.() || 0;
@@ -37,6 +35,10 @@ export default function AdminOrders() {
 
   const handleServe = async (id) => {
     await updateDoc(doc(db, "orders", id), { served: true });
+  };
+
+  const handlePaid = async (id) => {
+    await updateDoc(doc(db, "orders", id), { paid: true });
   };
 
   const handleClear = async () => {
@@ -62,17 +64,26 @@ export default function AdminOrders() {
               {order.items.map((item, idx) => (
                 <li key={idx}>
                   {item.name} x{item.quantity}
-                  {item.toppings?.length > 0 && (
+                  {item.sauces?.length > 0 && (
                     <div style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                      Toppings: {item.toppings.join(", ")}
+                      Sauces: {item.sauces.join(", ")}
                     </div>
                   )}
                 </li>
               ))}
             </ul>
+
             {!order.served && (
               <button className={styles.serveButton} onClick={() => handleServe(order.id)}>
                 Mark as Served
+              </button>
+            )}
+
+            {order.paid ? (
+              <p style={{ color: "green", fontWeight: "bold" }}>✅ Paid</p>
+            ) : (
+              <button onClick={() => handlePaid(order.id)} style={{ backgroundColor: "#28a745", color: "#fff", padding: "0.4rem 1rem", border: "none", borderRadius: "6px", marginTop: "0.5rem" }}>
+                Mark as Paid
               </button>
             )}
           </div>

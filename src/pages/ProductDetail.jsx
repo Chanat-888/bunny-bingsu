@@ -10,7 +10,7 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [selectedToppings, setSelectedToppings] = useState([]);
+  const [selectedSauce, setSelectedSauce] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -30,11 +30,11 @@ export default function ProductDetail() {
     fetchProduct();
   }, [id]);
 
-  const toggleTopping = (topping) => {
-    if (selectedToppings.includes(topping)) {
-      setSelectedToppings(selectedToppings.filter(t => t !== topping));
+  const toggleSauce = (sauce) => {
+    if (selectedSauce.includes(sauce)) {
+      setSelectedSauce(selectedSauce.filter(s => s !== sauce));
     } else {
-      setSelectedToppings([...selectedToppings, topping]);
+      setSelectedSauce([...selectedSauce, sauce]);
     }
   };
 
@@ -45,7 +45,7 @@ export default function ProductDetail() {
         name: product.name,
         price: product.price,
         quantity,
-        toppings: selectedToppings
+        sauce: selectedSauce
       });
     }
   };
@@ -62,20 +62,20 @@ export default function ProductDetail() {
           <h1>{product.name}</h1>
           <p>${product.price}</p>
 
-          {product.toppings?.length > 0 && (
-            <div className={styles.toppings}>
+          {product.sauces?.length > 0 && (
+            <div className={styles.sauces}>
               <h4>Choose Sauce:</h4>
-              <div className={styles.toppingButtons}>
-                {product.toppings.map((top, i) => (
+              <div className={styles.sauceButtons}>
+                {product.sauces.map((sauce, i) => (
                   <button
                     key={i}
                     type="button"
-                    className={`${styles.toppingButton} ${
-                      selectedToppings.includes(top) ? styles.selected : ""
+                    className={`${styles.sauceButton} ${
+                      selectedSauce.includes(sauce) ? styles.selected : ""
                     }`}
-                    onClick={() => toggleTopping(top)}
+                    onClick={() => toggleSauce(sauce)}
                   >
-                    {top}
+                    {sauce}
                   </button>
                 ))}
               </div>
