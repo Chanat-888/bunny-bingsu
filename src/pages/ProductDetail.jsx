@@ -1,31 +1,29 @@
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import styles from "./ProductDetail.module.css";
 import { useCart } from "../context/CartContext";
-import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedToppings, setSelectedToppings] = useState([]);
+  const { addToCart } = useCart();
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      const docRef = doc(db, "menu", id);
-      const docSnap = await getDoc(docRef);
+    const ref = doc(db, "menu", id);
+    const unsub = onSnapshot(ref, (docSnap) => {
       if (docSnap.exists()) {
         setProduct({ id: docSnap.id, ...docSnap.data() });
       } else {
-        console.error("Product not found");
+        setProduct(null);
       }
-    };
-    fetchProduct();
-  }, [id]);
+    });
 
-  if (!product) return <p>Loading product...</p>;
+    return () => unsub();
+  }, [id]);
 
   const toggleTopping = (topping) => {
     setSelectedToppings((prev) =>
@@ -43,9 +41,12 @@ export default function ProductDetail() {
       quantity,
       toppings: selectedToppings,
     };
+
     addToCart(cartItem);
     alert("Added to cart!");
   };
+
+  if (!product) return <p style={{ padding: "1rem" }}>Product not found.</p>;
 
   return (
     <div className={styles.page}>
@@ -64,7 +65,7 @@ export default function ProductDetail() {
         />
       </div>
 
-      {product.toppings && product.toppings.length > 0 && (
+      {product.toppings?.length > 0 && (
         <div className={styles.section}>
           <label>Toppings:</label>
           <div className={styles.toppings}>

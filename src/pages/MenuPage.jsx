@@ -1,31 +1,27 @@
-// src/pages/MenuPage.jsx
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
-import { useCart } from "../context/CartContext";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import ProductCard from "../components/ProductCard";
 import styles from "./MenuPage.module.css";
+import { db } from "../firebase";
+import { collection, onSnapshot } from "firebase/firestore";
+import { useCart } from "../context/CartContext";
 import { FiShoppingCart } from "react-icons/fi";
 
 export default function MenuPage() {
-  const [menu, setMenu] = useState([]);
-  const { cart, addToCart } = useCart();
-  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const navigate = useNavigate();
+  const [menuItems, setMenuItems] = useState([]);
+  const { cart } = useCart();
 
+  // 🟢 Real-time listener
   useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const snapshot = await getDocs(collection(db, "menu"));
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setMenu(data);
-      } catch (error) {
-        console.error("Failed to load menu:", error);
-      }
-    };
+    const unsub = onSnapshot(collection(db, "menu"), (snapshot) => {
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMenuItems(items.filter(item => item.available));
+    });
 
-    fetchMenu();
+    return () => unsub(); // clean up listener
   }, []);
+
+  const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <div className={styles.page}>
@@ -39,19 +35,10 @@ export default function MenuPage() {
       <h1 className={styles.title}>Menu</h1>
 
       <div className={styles.grid}>
-        {menu.map((item) => (
-          <div key={item.id} className={styles.card}>
-            <img src={item.image} alt={item.name} />
-            <h3>{item.name}</h3>
-            <p>${item.price}</p>
-            <button
-              disabled={!item.available}
-              className={item.available ? styles.addButton : styles.disabledButton}
-              onClick={() => navigate(`/product/${item.id}`)}
-            >
-              {item.available ? "Add to Cart" : "Unavailable"}
-            </button>
-          </div>
+        {menuItems.map((item) => (
+          <Link key={item.id} to={`/product/${item.id}`} className={styles.link}>
+            <ProductCard {...item} />
+          </Link>
         ))}
       </div>
 

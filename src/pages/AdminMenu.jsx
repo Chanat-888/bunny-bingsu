@@ -1,9 +1,11 @@
+// Updated AdminMenu.jsx with Firestore saving and editing
 import { useState, useEffect } from "react";
 import styles from "./AdminMenu.module.css";
 import { db } from "../firebase";
 import {
   collection,
   addDoc,
+  getDocs,
   onSnapshot,
   doc,
   updateDoc,
@@ -23,14 +25,10 @@ export default function AdminMenu() {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(menuCollection, (snapshot) => {
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMenu(items);
     });
-
-    return () => unsubscribe(); // cleanup listener
+    return () => unsubscribe();
   }, []);
 
   const handleAddTopping = () => {
@@ -50,20 +48,10 @@ export default function AdminMenu() {
   };
 
   const handleAddOrUpdateItem = async () => {
-    if (!name || !price || !image) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    const parsedPrice = parseFloat(price);
-    if (isNaN(parsedPrice)) {
-      alert("Price must be a number.");
-      return;
-    }
-
+    if (!name || !price || !image) return;
     const itemData = {
       name,
-      price: parsedPrice,
+      price: parseFloat(price),
       image,
       toppings,
       available: true
@@ -71,7 +59,8 @@ export default function AdminMenu() {
 
     try {
       if (editingId) {
-        await updateDoc(doc(db, "menu", editingId), itemData);
+        const ref = doc(db, "menu", editingId);
+        await updateDoc(ref, itemData);
       } else {
         await addDoc(menuCollection, itemData);
       }
@@ -83,7 +72,7 @@ export default function AdminMenu() {
 
   const handleEdit = (item) => {
     setName(item.name);
-    setPrice(item.price.toString());
+    setPrice(item.price);
     setImage(item.image);
     setToppings(item.toppings || []);
     setEditingId(item.id);
@@ -140,8 +129,8 @@ export default function AdminMenu() {
       </div>
 
       <div className={styles.menuList}>
-        {menu.map((item) => (
-          <div key={item.id} className={styles.card}>
+        {menu.map((item, index) => (
+          <div key={index} className={styles.card}>
             <img src={item.image} alt={item.name} />
             <h3>{item.name}</h3>
             <p>${item.price}</p>
