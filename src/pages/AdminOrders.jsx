@@ -31,8 +31,9 @@ export default function AdminOrders() {
     return (
       sum +
       o.items.reduce((s, i) => {
-        const extraCost = i.extraPrice || 0;
-        return s + (i.price + extraCost) * i.quantity;
+        const extras = i.extras || [];
+        const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
+        return s + (i.price + extrasTotal) * i.quantity;
       }, 0)
     );
   }, 0);
@@ -52,7 +53,6 @@ export default function AdminOrders() {
     }
   };
 
-  // 🟦 Group orders by date
   const groupedOrders = orders.reduce((groups, order) => {
     const dateKey = order.createdAt?.toDate().toLocaleDateString() || "Unknown Date";
     if (!groups[dateKey]) groups[dateKey] = [];
@@ -67,10 +67,19 @@ export default function AdminOrders() {
     <div className={styles.page}>
       <h1>Admin Orders</h1>
       <p>Total Sales: ${total.toFixed(2)}</p>
-      <button className={styles.clearButton} onClick={handleClear}>Clear History</button>
+      <button className={styles.clearButton} onClick={handleClear}>
+        Clear History
+      </button>
 
-      {/* 🟦 Date Tabs */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+      {/* Date Tabs */}
+      <div
+        style={{
+          display: "flex",
+          gap: "1rem",
+          marginBottom: "1rem",
+          flexWrap: "wrap",
+        }}
+      >
         {dates.map((d) => (
           <button
             key={d}
@@ -81,7 +90,7 @@ export default function AdminOrders() {
               border: "none",
               backgroundColor: d === activeDate ? "#007bff" : "#ccc",
               color: "white",
-              cursor: "pointer"
+              cursor: "pointer",
             }}
           >
             {d}
@@ -95,23 +104,34 @@ export default function AdminOrders() {
             <h3>Table: {order.table}</h3>
             <p>Status: {order.status}</p>
             <p>Time: {order.createdAt?.toDate().toLocaleString()}</p>
+
             <ul>
               {order.items.map((item, idx) => (
                 <li key={idx}>
                   {item.name} x{item.quantity}
                   {item.sauces?.length > 0 && (
-                    <div style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
                       Sauces: {item.sauces.join(", ")}
-                    </div>
+                    </span>
                   )}
                   {item.extras?.length > 0 && (
-                    <div style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
                       Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
-                    </div>
+                    </span>
                   )}
                 </li>
               ))}
             </ul>
+
+            <p className={styles.orderTotal}>
+  Order Total: $
+  {order.items.reduce((sum, item) => {
+    const extras = item.extras || [];
+    const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
+    return sum + (item.price + extrasTotal) * item.quantity;
+  }, 0).toFixed(2)}
+</p>
+
 
             {!order.served && (
               <button className={styles.serveButton} onClick={() => handleServe(order.id)}>
@@ -130,7 +150,7 @@ export default function AdminOrders() {
                   padding: "0.4rem 1rem",
                   border: "none",
                   borderRadius: "6px",
-                  marginTop: "0.5rem"
+                  marginTop: "0.5rem",
                 }}
               >
                 Mark as Paid

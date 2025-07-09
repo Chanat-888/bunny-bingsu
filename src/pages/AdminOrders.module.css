@@ -72,3 +72,11 @@ button:hover,
   font-weight: bold;
   color: #2d6a4f;
 }
+
+.orderTotal {
+  font-weight: bold;
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  color: #333;
+}
+

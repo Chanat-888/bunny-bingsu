@@ -12,6 +12,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [selectedSauce, setSelectedSauce] = useState([]);
   const [selectedExtras, setSelectedExtras] = useState([]);
+  const [selectedFlavor, setSelectedFlavor] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -48,6 +49,14 @@ export default function ProductDetail() {
     }
   };
 
+  const toggleFlavor = (flavor) => {
+    if (selectedFlavor.includes(flavor)) {
+      setSelectedFlavor(selectedFlavor.filter(f => f !== flavor));
+    } else {
+      setSelectedFlavor([...selectedFlavor, flavor]);
+    }
+  };
+
   const handleAdd = () => {
     if (product) {
       const extraTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
@@ -58,7 +67,8 @@ export default function ProductDetail() {
         quantity,
         sauces: selectedSauce,
         extras: selectedExtras,
-        extraPrice: extraTotal
+        extraPrice: extraTotal,
+        flavors: selectedFlavor,
       });
     }
   };
@@ -114,6 +124,24 @@ export default function ProductDetail() {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {product.flavors?.length > 0 && (
+            <div className={styles.sauces}>
+              <h4>Choose Flavor:</h4>
+              <div className={styles.sauceButtons}>
+                {product.flavors.map((flavor, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`${styles.sauceButton} ${selectedFlavor.includes(flavor) ? styles.selected : ""}`}
+                    onClick={() => toggleFlavor(flavor)}
+                  >
+                    {flavor}
+                  </button>
+                ))}
               </div>
             </div>
           )}
