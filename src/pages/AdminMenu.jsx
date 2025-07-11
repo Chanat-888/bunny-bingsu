@@ -29,6 +29,8 @@ export default function AdminMenu() {
   const [cheeseName, setCheeseName] = useState("");
   const [cheeses, setCheeses] = useState([]);
   const [cheesePrice, setCheesePrice] = useState("");
+  const [descriptionInput, setDescriptionInput] = useState("");
+  const [descriptions, setDescriptions] = useState([]);
 
   const menuCollection = collection(db, "menu");
 
@@ -51,6 +53,13 @@ export default function AdminMenu() {
     if (sauceInput.trim()) {
       setSauces([...sauces, sauceInput.trim()]);
       setSauceInput("");
+    }
+  };
+
+  const handleAddDescription = () => {
+    if (descriptionInput.trim()) {
+      setDescriptions([...descriptions, descriptionInput.trim()]);
+      setDescriptionInput("");
     }
   };
 
@@ -102,6 +111,8 @@ export default function AdminMenu() {
     setCheeseName("");
     setCheeses([]);
     setCheesePrice("");
+    setDescriptionInput("");
+    setDescriptions([]);
   };
 
   const handleAddOrUpdateItem = async () => {
@@ -116,6 +127,7 @@ export default function AdminMenu() {
       toppings,
       cheeses,
       extras,
+      descriptions,
       available: true,
       mode
     };
@@ -146,6 +158,7 @@ export default function AdminMenu() {
     setEditingId(item.id);
     setToppings(item.toppings || []);
     setCheeses(item.cheeses || []);
+    setDescriptions(item.descriptions || []);
   };
 
   const handleDelete = async (id) => {
@@ -205,6 +218,20 @@ export default function AdminMenu() {
             + Add Sauce
           </button>
         </div>
+
+        {/* Description */}
+        <div className={styles.toppingsSection}>
+          <input
+            type="text"
+            placeholder="Add Description"
+            value={descriptionInput}
+            onChange={(e) => setDescriptionInput(e.target.value)}
+          />
+          <button className={styles.addToppingButton} onClick={handleAddDescription}>
+            + Add Description
+          </button>
+        </div>
+
 
         {/* Flavor */}
         {showFlavorInput && (
@@ -285,6 +312,7 @@ export default function AdminMenu() {
           {sauces.map((s, i) => <span key={i}>{s}</span>)}
           {flavors.map((f, i) => <span key={i}>Flavor: {f}</span>)}
           {toppings.map((t, i) => <span key={i}>Topping: {t}</span>)}
+          {descriptions.map((d, i) => <span key={i}>Description: {d}</span>)}
           {cheeses.map((e, i) => (
             <span key={i}>Cheese: {e.name} (+${e.price.toFixed(2)})</span>
           ))}
@@ -306,6 +334,7 @@ export default function AdminMenu() {
             <p>${item.price}</p>
             <p>Mode: {item.mode}</p>
             <p>Sauce: {item.sauces?.join(", ") || "None"}</p>
+            <p>Description: {item.descriptions?.join(", ") || "None"}</p>
             {item.flavors && <p>Flavor: {item.flavors.join(", ")}</p>}
             {item.toppings && <p>Topping: {item.toppings.join(", ")}</p>}
             {item.cheeses && item.cheeses.length > 0 && (

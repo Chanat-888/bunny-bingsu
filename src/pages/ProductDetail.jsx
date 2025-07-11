@@ -15,6 +15,7 @@ export default function ProductDetail() {
   const [selectedFlavor, setSelectedFlavor] = useState([]);
   const [selectedTopping, setSelectedTopping] = useState([]);
   const [selectedCheese, setSelectedCheese] = useState([]);
+  const [selectedDescription, setSelectedDescription] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -39,6 +40,14 @@ export default function ProductDetail() {
       setSelectedSauce(selectedSauce.filter(s => s !== sauce));
     } else {
       setSelectedSauce([...selectedSauce, sauce]);
+    }
+  };
+
+  const toggleDescription = (description) => {
+    if (selectedDescription.includes(description)) {
+      setSelectedDescription(selectedDescription.filter(d => d !== description));
+    } else {
+      setSelectedDescription([...selectedDescription, description]);
     }
   };
 
@@ -92,6 +101,7 @@ export default function ProductDetail() {
         toppings: selectedTopping,
         cheeses: selectedCheese,
         cheesePrice: cheeseTotal,
+        description: selectedDescription,
       });
     }
   };
@@ -110,7 +120,7 @@ export default function ProductDetail() {
 
           {product.sauces?.length > 0 && (
             <div className={styles.sauces}>
-              <h4>Description</h4>
+              <h4>Choose Sauce :</h4>
               <div className={styles.sauceButtons}>
                 {product.sauces.map((sauce, i) => (
                   <button
@@ -122,6 +132,26 @@ export default function ProductDetail() {
                     onClick={() => toggleSauce(sauce)}
                   >
                     {sauce}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {product.descriptions?.length > 0 && (
+            <div className={styles.sauces}>
+              <h4>Choose Description :</h4>
+              <div className={styles.dauceButtons}>
+                {product.descriptions.map((description, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`${styles.sauceButton} ${
+                      selectedDescription.includes(description) ? styles.selected : ""
+                    }`}
+                    onClick={() => toggleDescription(description)}
+                  >
+                    {description}
                   </button>
                 ))}
               </div>
