@@ -140,7 +140,7 @@ export default function ProductDetail() {
 
           {product.descriptions?.length > 0 && (
             <div className={styles.sauces}>
-              <h4>Choose Description :</h4>
+              <h4>Description</h4>
               <div className={styles.dauceButtons}>
                 {product.descriptions.map((description, i) => (
                   <button
