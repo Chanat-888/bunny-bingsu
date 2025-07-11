@@ -32,8 +32,10 @@ export default function AdminOrders() {
       sum +
       o.items.reduce((s, i) => {
         const extras = i.extras || [];
+        const cheeses = i.cheeses || [];
         const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
-        return s + (i.price + extrasTotal) * i.quantity;
+        const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
+        return s + (i.price + extrasTotal + cheesesTotal) * i.quantity;
       }, 0)
     );
   }, 0);
@@ -114,9 +116,28 @@ export default function AdminOrders() {
                       Sauces: {item.sauces.join(", ")}
                     </span>
                   )}
+
+                  {item.flavors?.length > 0 && (
+                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                      Flavors: {item.flavors.join(", ")}
+                    </span>
+                  )}
+
+                  {item.toppings?.length > 0 && (
+                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                      Toppings: {item.toppings.join(", ")}
+                    </span>
+                  )}
+
                   {item.extras?.length > 0 && (
                     <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
                       Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
+                    </span>
+                  )}
+
+                  {item.cheeses?.length > 0 && (
+                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                      Cheeses: {item.cheeses.map((cheese) => `${cheese.name} (+$${cheese.price})`).join(", ")}
                     </span>
                   )}
                 </li>
@@ -127,8 +148,10 @@ export default function AdminOrders() {
   Order Total: $
   {order.items.reduce((sum, item) => {
     const extras = item.extras || [];
+    const cheeses = item.cheeses || [];
     const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
-    return sum + (item.price + extrasTotal) * item.quantity;
+    const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
+    return sum + (item.price + extrasTotal + cheesesTotal) * item.quantity;
   }, 0).toFixed(2)}
 </p>
 

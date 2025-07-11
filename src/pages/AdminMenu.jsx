@@ -24,13 +24,18 @@ export default function AdminMenu() {
   const [extras, setExtras] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [mode, setMode] = useState("");
+  const [toppingInput, setToppingInput] = useState("");
+  const [toppings, setToppings] = useState([]);
+  const [cheeseName, setCheeseName] = useState("");
+  const [cheeses, setCheeses] = useState([]);
+  const [cheesePrice, setCheesePrice] = useState("");
 
   const menuCollection = collection(db, "menu");
 
   const modes = [
     "บิงซูสายไหม", "ขนมปังปิ้ง", "ทวิสเตอร์", "คู่หู",
     "น้ำผลไม้สกัด", "น้ำผลไม้ปั่น", "Smoothie", "เฟรนช์ฟรายส์",
-    "น้ำอัดลม", "ท็อปปิ้ง"
+    "น้ำอัดลม", "ท็อปปิ้ง", "สมูทตี้"
   ];
 
   useEffect(() => {
@@ -56,6 +61,21 @@ export default function AdminMenu() {
     }
   };
 
+  const handleAddTopping = () => {
+    if (toppingInput.trim()) {
+      setToppings([...toppings, toppingInput.trim()]);
+      setToppingInput("");
+    }
+  };
+
+  const handleAddCheese = () => {
+    if (cheeseName.trim() && cheesePrice.trim()) {
+      setCheeses([...cheeses, { name: cheeseName.trim(), price: parseFloat(cheesePrice) }]);
+      setCheeseName("");
+      setCheesePrice("");
+    }
+  };
+
   const handleAddExtra = () => {
     if (extraName.trim() && extraPrice.trim()) {
       setExtras([...extras, { name: extraName.trim(), price: parseFloat(extraPrice) }]);
@@ -77,6 +97,11 @@ export default function AdminMenu() {
     setExtraPrice("");
     setEditingId(null);
     setMode("");
+    setToppingInput("");
+    setToppings([]);
+    setCheeseName("");
+    setCheeses([]);
+    setCheesePrice("");
   };
 
   const handleAddOrUpdateItem = async () => {
@@ -88,6 +113,8 @@ export default function AdminMenu() {
       image,
       sauces,
       flavors,
+      toppings,
+      cheeses,
       extras,
       available: true,
       mode
@@ -117,6 +144,8 @@ export default function AdminMenu() {
     setExtras(item.extras || []);
     setMode(item.mode || "");
     setEditingId(item.id);
+    setToppings(item.toppings || []);
+    setCheeses(item.cheeses || []);
   };
 
   const handleDelete = async (id) => {
@@ -128,8 +157,10 @@ export default function AdminMenu() {
     }
   };
 
-  const showFlavorInput = mode === "คู่หู" || mode === "ทวิสเตอร์";
-  const showExtraInput = mode === "น้ำผลไม้ปั่น";
+  const showFlavorInput = mode === "คู่หู" || mode === "ทวิสเตอร์" || mode === "เฟรนช์ฟรายส์";
+  const showExtraInput = mode === "น้ำผลไม้ปั่น" || mode === "สมูทตี้";
+  const showToppingInput = mode === "ทวิสเตอร์";
+  const showCheeseInput = mode === "เฟรนช์ฟรายส์";
 
   return (
     <div className={styles.page}>
@@ -190,6 +221,44 @@ export default function AdminMenu() {
           </div>
         )}
 
+        {/* Cheese */}
+        {showCheeseInput && (
+          <div className={styles.toppingsSection}>
+            <input
+              type="text"
+              placeholder="Cheese Name"
+              value={cheeseName}
+              onChange={(e) => setCheeseName(e.target.value)}
+            />
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Cheese Price"
+              value={cheesePrice}
+              onChange={(e) => setCheesePrice(e.target.value)}
+            />
+            <button className={styles.addToppingButton} onClick={handleAddCheese}>
+              + Add Cheese
+            </button>
+          </div>
+        )}
+
+
+        {/* Topping */}
+        {showToppingInput && (
+          <div className={styles.toppingsSection}>
+            <input
+              type="text"
+              placeholder="Add Topping"
+              value={toppingInput}
+              onChange={(e) => setToppingInput(e.target.value)}
+            />
+            <button className={styles.addToppingButton} onClick={handleAddTopping}>
+              + Add Topping
+            </button>
+          </div>
+        )}
+
         {/* Extra */}
         {showExtraInput && (
           <div className={styles.toppingsSection}>
@@ -215,6 +284,10 @@ export default function AdminMenu() {
         <div className={styles.toppingsList}>
           {sauces.map((s, i) => <span key={i}>{s}</span>)}
           {flavors.map((f, i) => <span key={i}>Flavor: {f}</span>)}
+          {toppings.map((t, i) => <span key={i}>Topping: {t}</span>)}
+          {cheeses.map((e, i) => (
+            <span key={i}>Cheese: {e.name} (+${e.price.toFixed(2)})</span>
+          ))}
           {extras.map((e, i) => (
             <span key={i}>Extra: {e.name} (+${e.price.toFixed(2)})</span>
           ))}
@@ -234,6 +307,13 @@ export default function AdminMenu() {
             <p>Mode: {item.mode}</p>
             <p>Sauce: {item.sauces?.join(", ") || "None"}</p>
             {item.flavors && <p>Flavor: {item.flavors.join(", ")}</p>}
+            {item.toppings && <p>Topping: {item.toppings.join(", ")}</p>}
+            {item.cheeses && item.cheeses.length > 0 && (
+              <p>
+                Cheeses:{" "}
+                {item.cheeses.map((c, i) => `${c.name} ($${c.price})`).join(", ")}
+              </p>
+            )}
             {item.extras && item.extras.length > 0 && (
               <p>
                 Extras:{" "}

@@ -13,6 +13,8 @@ export default function ProductDetail() {
   const [selectedSauce, setSelectedSauce] = useState([]);
   const [selectedExtras, setSelectedExtras] = useState([]);
   const [selectedFlavor, setSelectedFlavor] = useState([]);
+  const [selectedTopping, setSelectedTopping] = useState([]);
+  const [selectedCheese, setSelectedCheese] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -57,9 +59,27 @@ export default function ProductDetail() {
     }
   };
 
+  const toggleCheese = (cheese) => {
+    const found = selectedCheese.find(c => c.name === cheese.name);
+    if (found) {
+      setSelectedCheese(selectedCheese.filter(c => c.name !== cheese.name));
+    } else {
+      setSelectedCheese([...selectedCheese, cheese]);
+    }
+  };
+
+  const toggleTopping = (topping) => {
+    if (selectedTopping.includes(topping)) {
+      setSelectedTopping(selectedTopping.filter(t => t !== topping));
+    } else {
+      setSelectedTopping([...selectedTopping, topping]);
+    }
+  };
+
   const handleAdd = () => {
     if (product) {
       const extraTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
+      const cheeseTotal = selectedCheese.reduce((sum, c) => sum + c.price, 0);
       addToCart({
         id: product.id,
         name: product.name,
@@ -69,6 +89,9 @@ export default function ProductDetail() {
         extras: selectedExtras,
         extraPrice: extraTotal,
         flavors: selectedFlavor,
+        toppings: selectedTopping,
+        cheeses: selectedCheese,
+        cheesePrice: cheeseTotal,
       });
     }
   };
@@ -146,6 +169,48 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {product.cheeses?.length > 0 && (
+            <div className={styles.sauces}>
+              <h4>Choose Cheese:</h4>
+              <div className={styles.sauceButtons}>
+                {product.cheeses.map((cheese, i) => {
+                  const selected = selectedCheese.find(c => c.name === cheese.name);
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`${styles.sauceButton} ${
+                        selected ? styles.selected : ""
+                      }`}
+                      onClick={() => toggleCheese(cheese)}
+                    >
+                      {cheese.name} (+${cheese.price})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+
+          {product.toppings?.length > 0 && (
+            <div className={styles.sauces}>
+              <h4>Choose Topping:</h4>
+              <div className={styles.sauceButtons}>
+                {product.toppings.map((topping, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`${styles.sauceButton} ${selectedTopping.includes(topping) ? styles.selected : ""}`}
+                    onClick={() => toggleTopping(topping)}
+                  >
+                    {topping}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className={styles.controls}>
             <label>
               Quantity:
@@ -156,7 +221,15 @@ export default function ProductDetail() {
                 onChange={(e) => setQuantity(parseInt(e.target.value))}
               />
             </label>
-            <button onClick={handleAdd}>Add to Cart</button>
+            <button
+  onClick={() => {
+    handleAdd();
+    window.location.href = "/";
+  }}
+>
+  Add to Cart
+</button>
+
           </div>
         </div>
       </div>

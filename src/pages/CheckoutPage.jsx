@@ -69,6 +69,23 @@ export default function CheckoutPage() {
                     <div>Sauces: {item.sauces.join(", ")}</div>
                   )}
 
+                  {(item.flavors || []).length > 0 && (
+                    <div>Flavors: {item.flavors.join(", ")}</div>
+                  )}
+
+                  {(item.cheeses || []).length > 0 && (
+                    <div>
+                      Cheeses:{" "}
+                      {item.cheeses
+                        .map((cheese) => `${cheese.name} (+$${cheese.price})`)
+                        .join(", ")}
+                    </div>
+                  )}
+
+                  {(item.toppings || []).length > 0 && (
+                    <div>Toppings: {item.toppings.join(", ")}</div>
+                  )}
+
                   {(item.extras || []).length > 0 && (
                     <div>
                       Extras:{" "}
@@ -88,7 +105,7 @@ export default function CheckoutPage() {
                 <div>
                   ${(
                     item.quantity *
-                    (item.price + (item.extraPrice || 0))
+                    (item.price + (item.extraPrice || 0) + (item.cheesePrice || 0))
                   ).toFixed(2)}
                 </div>
               </div>
