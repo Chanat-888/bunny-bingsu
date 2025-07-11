@@ -110,7 +110,7 @@ export default function ProductDetail() {
 
           {product.sauces?.length > 0 && (
             <div className={styles.sauces}>
-              <h4>Choose Sauce:</h4>
+              <h4>Description</h4>
               <div className={styles.sauceButtons}>
                 {product.sauces.map((sauce, i) => (
                   <button
