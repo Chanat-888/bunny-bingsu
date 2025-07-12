@@ -175,7 +175,7 @@ export default function ProductDetail() {
                       }`}
                       onClick={() => toggleExtra(extra)}
                     >
-                      {extra.name} (+${extra.price})
+                      {extra.name} (+฿{extra.price})
                     </button>
                   );
                 })}
@@ -216,7 +216,7 @@ export default function ProductDetail() {
                       }`}
                       onClick={() => toggleCheese(cheese)}
                     >
-                      {cheese.name} (+${cheese.price})
+                      {cheese.name} (+฿{cheese.price})
                     </button>
                   );
                 })}

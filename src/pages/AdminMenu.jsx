@@ -314,10 +314,10 @@ export default function AdminMenu() {
           {toppings.map((t, i) => <span key={i}>Topping: {t}</span>)}
           {descriptions.map((d, i) => <span key={i}>Description: {d}</span>)}
           {cheeses.map((e, i) => (
-            <span key={i}>Cheese: {e.name} (+${e.price.toFixed(2)})</span>
+            <span key={i}>Cheese: {e.name} (+฿{e.price.toFixed(2)})</span>
           ))}
           {extras.map((e, i) => (
-            <span key={i}>Extra: {e.name} (+${e.price.toFixed(2)})</span>
+            <span key={i}>Extra: {e.name} (+฿{e.price.toFixed(2)})</span>
           ))}
         </div>
 
@@ -331,7 +331,7 @@ export default function AdminMenu() {
           <div key={index} className={styles.card}>
             <img src={item.image} alt={item.name} />
             <h3>{item.name}</h3>
-            <p>${item.price}</p>
+            <p>฿{item.price}</p>
             <p>Mode: {item.mode}</p>
             <p>Sauce: {item.sauces?.join(", ") || "None"}</p>
             <p>Description: {item.descriptions?.join(", ") || "None"}</p>

@@ -55,6 +55,13 @@ export default function AdminOrders() {
     }
   };
 
+  const handleClearSelectedDate = async () => {
+    const targetOrders = groupedOrders[activeDate]?.filter((o) => o.served) || [];
+    for (const order of targetOrders) {
+      await deleteDoc(doc(db, "orders", order.id));
+    }
+  };
+
   const groupedOrders = orders.reduce((groups, order) => {
     const dateKey = order.createdAt?.toDate().toLocaleDateString() || "Unknown Date";
     if (!groups[dateKey]) groups[dateKey] = [];
@@ -65,13 +72,37 @@ export default function AdminOrders() {
   const dates = Object.keys(groupedOrders).sort((a, b) => new Date(b) - new Date(a));
   const activeDate = selectedDate || dates[0];
 
+  const dailyTotal = (groupedOrders[activeDate] || []).reduce((sum, o) => {
+    if (!o.served) return sum;
+    return (
+      sum +
+      o.items.reduce((s, i) => {
+        const extras = i.extras || [];
+        const cheeses = i.cheeses || [];
+        const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
+        const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
+        return s + (i.price + extrasTotal + cheesesTotal) * i.quantity;
+      }, 0)
+    );
+  }, 0);
+
   return (
     <div className={styles.page}>
       <h1>Admin Orders</h1>
-      <p>Total Sales: ${total.toFixed(2)}</p>
-      <button className={styles.clearButton} onClick={handleClear}>
-        Clear History
-      </button>
+      <p>Total Sales (All Time): ฿{total.toFixed(2)}</p>
+      <p>Total Sales ({activeDate}): ฿{dailyTotal.toFixed(2)}</p>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+        <button className={styles.clearButton} onClick={handleClear}>
+          Clear All History
+        </button>
+        <button
+          className={styles.clearButton}
+          style={{ backgroundColor: "#dc3545" }}
+          onClick={handleClearSelectedDate}
+        >
+          Clear {activeDate} History
+        </button>
+      </div>
 
       {/* Date Tabs */}
       <div
@@ -116,25 +147,21 @@ export default function AdminOrders() {
                       Sauces: {item.sauces.join(", ")}
                     </span>
                   )}
-
                   {item.flavors?.length > 0 && (
                     <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
                       Flavors: {item.flavors.join(", ")}
                     </span>
                   )}
-
                   {item.toppings?.length > 0 && (
                     <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
                       Toppings: {item.toppings.join(", ")}
                     </span>
                   )}
-
                   {item.extras?.length > 0 && (
                     <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
                       Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
                     </span>
                   )}
-
                   {item.cheeses?.length > 0 && (
                     <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
                       Cheeses: {item.cheeses.map((cheese) => `${cheese.name} (+$${cheese.price})`).join(", ")}
@@ -145,16 +172,15 @@ export default function AdminOrders() {
             </ul>
 
             <p className={styles.orderTotal}>
-  Order Total: $
-  {order.items.reduce((sum, item) => {
-    const extras = item.extras || [];
-    const cheeses = item.cheeses || [];
-    const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
-    const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
-    return sum + (item.price + extrasTotal + cheesesTotal) * item.quantity;
-  }, 0).toFixed(2)}
-</p>
-
+              Order Total: ฿
+              {order.items.reduce((sum, item) => {
+                const extras = item.extras || [];
+                const cheeses = item.cheeses || [];
+                const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
+                const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
+                return sum + (item.price + extrasTotal + cheesesTotal) * item.quantity;
+              }, 0).toFixed(2)}
+            </p>
 
             {!order.served && (
               <button className={styles.serveButton} onClick={() => handleServe(order.id)}>
