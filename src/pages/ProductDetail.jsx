@@ -118,26 +118,6 @@ export default function ProductDetail() {
           <h1>{product.name}</h1>
           <p>${product.price}</p>
 
-          {product.sauces?.length > 0 && (
-            <div className={styles.sauces}>
-              <h4>Choose Sauce :</h4>
-              <div className={styles.sauceButtons}>
-                {product.sauces.map((sauce, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`${styles.sauceButton} ${
-                      selectedSauce.includes(sauce) ? styles.selected : ""
-                    }`}
-                    onClick={() => toggleSauce(sauce)}
-                  >
-                    {sauce}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {product.descriptions?.length > 0 && (
             <div className={styles.sauces}>
               <h4>Description</h4>
@@ -158,6 +138,28 @@ export default function ProductDetail() {
             </div>
           )}
 
+
+          {product.sauces?.length > 0 && (
+            <div className={styles.sauces}>
+              <h4>Choose Sauce :</h4>
+              <div className={styles.sauceButtons}>
+                {product.sauces.map((sauce, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`${styles.sauceButton} ${
+                      selectedSauce.includes(sauce) ? styles.selected : ""
+                    }`}
+                    onClick={() => toggleSauce(sauce)}
+                  >
+                    {sauce}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          
           {product.extras?.length > 0 && (
             <div className={styles.sauces}>
               <h4>Choose Extras:</h4>
