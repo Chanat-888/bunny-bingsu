@@ -103,7 +103,7 @@ export default function CheckoutPage() {
                   </button>
                 </div>
                 <div>
-                  ${(
+                  ฿{(
                     item.quantity *
                     (item.price + (item.extraPrice || 0) + (item.cheesePrice || 0))
                   ).toFixed(2)}
@@ -114,7 +114,7 @@ export default function CheckoutPage() {
 
           <div className={styles.total}>
             <span>Total:</span>
-            <strong>${total}</strong>
+            <strong>฿{total}</strong>
           </div>
 
           <div className={styles.tableRow}>

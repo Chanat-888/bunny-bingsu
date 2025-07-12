@@ -116,7 +116,7 @@ export default function ProductDetail() {
         <img src={product.image} alt={product.name} className={styles.image} />
         <div className={styles.info}>
           <h1>{product.name}</h1>
-          <p>${product.price}</p>
+          <p>฿{product.price}</p>
 
           {product.descriptions?.length > 0 && (
             <div className={styles.sauces}>
