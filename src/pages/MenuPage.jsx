@@ -6,6 +6,8 @@ import { db } from "../firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useCart } from "../context/CartContext";
 import { FiShoppingCart } from "react-icons/fi";
+import React from "react";
+
 
 export default function MenuPage() {
   const [groupedMenu, setGroupedMenu] = useState({});
