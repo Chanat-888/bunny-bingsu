@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
 import styles from "./MenuPage.module.css";
@@ -9,7 +9,9 @@ import { FiShoppingCart } from "react-icons/fi";
 
 export default function MenuPage() {
   const [groupedMenu, setGroupedMenu] = useState({});
-  const { cart } = useCart();
+  const { cart, addToCart } = useCart();
+  const [popupVisible, setPopupVisible] = useState(false);
+  const sectionRefs = useRef({}); // holds refs for each mode
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "menu"), (snapshot) => {
@@ -18,7 +20,6 @@ export default function MenuPage() {
         ...doc.data(),
       }));
 
-      // Filter available items and group by mode
       const grouped = {};
       items
         .filter((item) => item.available)
@@ -29,12 +30,32 @@ export default function MenuPage() {
         });
 
       setGroupedMenu(grouped);
+
+      // Initialize refs after grouping
+      const refs = {};
+      Object.keys(grouped).forEach((mode) => {
+        refs[mode] = refs[mode] || React.createRef();
+      });
+      sectionRefs.current = refs;
     });
 
     return () => unsub();
   }, []);
 
   const itemCount = cart.reduce((total, item) => total + item.quantity, 0);
+
+  const scrollToMode = (mode) => {
+    const section = sectionRefs.current[mode];
+    if (section && section.current) {
+      section.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const showAddedPopup = () => {
+  setPopupVisible(true);
+  setTimeout(() => setPopupVisible(false), 1500); // hide after 1.5 sec
+};
+
 
   return (
     <div className={styles.page}>
@@ -47,22 +68,73 @@ export default function MenuPage() {
 
       <h1 className={styles.title}>Menu</h1>
 
+      {popupVisible && (
+  <div className={styles.popup}>
+    ✅ Added to cart!
+  </div>
+)}
+
+
+      {/* ▶️ Buttons to scroll to each mode */}
+      <div className={styles.modeNav}>
+        {Object.keys(groupedMenu).map((mode) => (
+          <button
+            key={mode}
+            className={styles.modeButton}
+            onClick={() => scrollToMode(mode)}
+          >
+            {mode}
+          </button>
+        ))}
+      </div>
+
       {Object.keys(groupedMenu).map((mode) => (
-        <div key={mode} className={styles.section}>
-          <h2 className={styles.modeTitle}>{mode}</h2>
-          <div className={styles.grid}>
-            {groupedMenu[mode].map((item) => (
-              <Link
-                key={item.id}
-                to={`/product/${item.id}`}
-                className={styles.link}
+  <div key={mode} ref={sectionRefs.current[mode]} className={styles.section}>
+    <h2 className={styles.modeTitle}>{mode}</h2>
+    <div className={styles.grid}>
+      {["ท็อปปิ้ง", "น้ำอัดลม"].includes(mode)
+        ? groupedMenu[mode].map((item) => (
+            <div key={item.id} className={styles.cardWrapper}>
+              <ProductCard {...item} />
+              <button
+                className={styles.quickAddButton}
+                onClick={() => {
+  addToCart({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    quantity: 1,
+    sauces: [],
+    extras: [],
+    extraPrice: 0,
+    flavors: [],
+    toppings: [],
+    cheeses: [],
+    cheesePrice: 0,
+    description: [],
+    mode: item.mode,
+  });
+  showAddedPopup(); // 👈 show confirmation
+}}
+
               >
-                <ProductCard {...item} />
-              </Link>
-            ))}
-          </div>
-        </div>
-      ))}
+                Add to Cart
+              </button>
+            </div>
+          ))
+        : groupedMenu[mode].map((item) => (
+            <Link
+              key={item.id}
+              to={`/product/${item.id}`}
+              className={styles.link}
+            >
+              <ProductCard {...item} />
+            </Link>
+          ))}
+    </div>
+  </div>
+))}
+
 
       <div className={styles.checkoutWrapper}>
         <Link to="/checkout" className={styles.checkoutButton}>

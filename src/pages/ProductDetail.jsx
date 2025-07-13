@@ -36,12 +36,34 @@ export default function ProductDetail() {
   }, [id]);
 
   const toggleSauce = (sauce) => {
+  if (!product) return;
+
+  const mode = product.mode;
+
+  if (mode === "บิงซูสายไหม" || mode === "ขนมปังปิ้ง") {
+    if (selectedSauce.includes(sauce)) {
+      setSelectedSauce([]);
+    } else {
+      setSelectedSauce([sauce]);
+    }
+
+  } else if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
+    if (selectedSauce.includes(sauce)) {
+      setSelectedSauce(selectedSauce.filter(s => s !== sauce));
+    } else if (selectedSauce.length < 2) {
+      setSelectedSauce([...selectedSauce, sauce]);
+    }
+
+  } else {
     if (selectedSauce.includes(sauce)) {
       setSelectedSauce(selectedSauce.filter(s => s !== sauce));
     } else {
       setSelectedSauce([...selectedSauce, sauce]);
     }
-  };
+  }
+};
+
+
 
   const toggleDescription = (description) => {
     if (selectedDescription.includes(description)) {
@@ -61,12 +83,27 @@ export default function ProductDetail() {
   };
 
   const toggleFlavor = (flavor) => {
+  if (!product) return;
+
+  const mode = product.mode;
+
+  if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
+    // Only one flavor allowed
+    if (selectedFlavor.includes(flavor)) {
+      setSelectedFlavor([]);
+    } else {
+      setSelectedFlavor([flavor]);
+    }
+  } else {
+    // Default: allow multiple
     if (selectedFlavor.includes(flavor)) {
       setSelectedFlavor(selectedFlavor.filter(f => f !== flavor));
     } else {
       setSelectedFlavor([...selectedFlavor, flavor]);
     }
-  };
+  }
+};
+
 
   const toggleCheese = (cheese) => {
     const found = selectedCheese.find(c => c.name === cheese.name);
@@ -102,6 +139,7 @@ export default function ProductDetail() {
         cheeses: selectedCheese,
         cheesePrice: cheeseTotal,
         description: selectedDescription,
+        mode: product.mode
       });
     }
   };
@@ -117,6 +155,9 @@ export default function ProductDetail() {
         <div className={styles.info}>
           <h1>{product.name}</h1>
           <p>฿{product.price}</p>
+          <p style={{ fontStyle: "italic", color: "gray" }}>หมวด: {product.mode}</p>
+
+          {/* existing components remain unchanged */}
 
           {product.descriptions?.length > 0 && (
             <div className={styles.sauces}>
@@ -126,8 +167,8 @@ export default function ProductDetail() {
                   <button
                     key={i}
                     type="button"
-                    className={`${styles.sauceButton} ${
-                      selectedDescription.includes(description) ? styles.selected : ""
+                    className={`${styles.description} ${
+                      selectedDescription.includes(description) ? styles.description : ""
                     }`}
                     onClick={() => toggleDescription(description)}
                   >
@@ -137,7 +178,6 @@ export default function ProductDetail() {
               </div>
             </div>
           )}
-
 
           {product.sauces?.length > 0 && (
             <div className={styles.sauces}>
@@ -159,7 +199,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          
           {product.extras?.length > 0 && (
             <div className={styles.sauces}>
               <h4>Choose Extras:</h4>
@@ -224,7 +263,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-
           {product.toppings?.length > 0 && (
             <div className={styles.sauces}>
               <h4>Choose Topping:</h4>
@@ -254,6 +292,7 @@ export default function ProductDetail() {
               />
             </label>
             <button
+  className={styles.addToCartButton}
   onClick={() => {
     handleAdd();
     window.location.href = "/";
