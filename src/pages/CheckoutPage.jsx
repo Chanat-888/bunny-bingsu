@@ -128,7 +128,7 @@ export default function CheckoutPage() {
           </div>
 
           <button className={styles.button} onClick={handleCheckout}>
-            Place Order
+            กดสั่ง
           </button>
         </>
       )}

@@ -6,7 +6,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  onSnapshot
+  onSnapshot,
 } from "firebase/firestore";
 
 export default function AdminOrders() {
@@ -104,7 +104,6 @@ export default function AdminOrders() {
         </button>
       </div>
 
-      {/* Date Tabs */}
       <div
         style={{
           display: "flex",
@@ -164,7 +163,7 @@ export default function AdminOrders() {
                   )}
                   {item.cheeses?.length > 0 && (
                     <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                      Cheeses: {item.cheeses.map((cheese) => `${cheese.name} (+$${cheese.price})`).join(", ")}
+                      Cheeses: {item.cheeses.map((ch) => `${ch.name} (+$${ch.price})`).join(", ")}
                     </span>
                   )}
                 </li>
@@ -205,6 +204,45 @@ export default function AdminOrders() {
                 Mark as Paid
               </button>
             )}
+
+            {/* New Buttons */}
+            <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={async () => {
+                  const confirmDelete = window.confirm("Are you sure you want to delete this order?");
+                  if (confirmDelete) {
+                    await deleteDoc(doc(db, "orders", order.id));
+                  }
+                }}
+                style={{
+                  backgroundColor: "#dc3545",
+                  color: "white",
+                  padding: "0.3rem 0.7rem",
+                  border: "none",
+                  borderRadius: "6px",
+                }}
+              >
+                Delete Order
+              </button>
+
+              <button
+                onClick={async () => {
+                  const newTable = prompt("Enter new table number:", order.table);
+                  if (newTable && newTable.trim() !== "") {
+                    await updateDoc(doc(db, "orders", order.id), { table: newTable.trim() });
+                  }
+                }}
+                style={{
+                  backgroundColor: "#ffc107",
+                  color: "#000",
+                  padding: "0.3rem 0.7rem",
+                  border: "none",
+                  borderRadius: "6px",
+                }}
+              >
+                Change Table
+              </button>
+            </div>
           </div>
         ))}
       </div>
