@@ -170,6 +170,20 @@ export default function AdminMenu() {
     }
   };
 
+  // 🔹 NEW: toggle availability without changing other functions
+  const toggleAvailability = async (item) => {
+    try {
+      const ref = doc(db, "menu", item.id);
+      const next = !item.available;
+      await updateDoc(ref, { available: next });
+      setMenu(prev =>
+        prev.map(m => (m.id === item.id ? { ...m, available: next } : m))
+      );
+    } catch (err) {
+      console.error("Failed to toggle availability:", err);
+    }
+  };
+
   const showFlavorInput = mode === "คู่หู" || mode === "ทวิสเตอร์" || mode === "เฟรนช์ฟรายส์";
   const showExtraInput = mode === "น้ำผลไม้ปั่น" || mode === "สมูทตี้";
   const showToppingInput = mode === "ทวิสเตอร์";
@@ -232,7 +246,6 @@ export default function AdminMenu() {
           </button>
         </div>
 
-
         {/* Flavor */}
         {showFlavorInput && (
           <div className={styles.toppingsSection}>
@@ -269,7 +282,6 @@ export default function AdminMenu() {
             </button>
           </div>
         )}
-
 
         {/* Topping */}
         {showToppingInput && (
@@ -339,17 +351,21 @@ export default function AdminMenu() {
             {item.toppings && <p>Topping: {item.toppings.join(", ")}</p>}
             {item.cheeses && item.cheeses.length > 0 && (
               <p>
-                Cheeses:{" "}
-                {item.cheeses.map((c, i) => `${c.name} ($${c.price})`).join(", ")}
+                Cheeses: {item.cheeses.map((c) => `${c.name} ($${c.price})`).join(", ")}
               </p>
             )}
             {item.extras && item.extras.length > 0 && (
               <p>
-                Extras:{" "}
-                {item.extras.map((ex, i) => `${ex.name} ($${ex.price})`).join(", ")}
+                Extras: {item.extras.map((ex) => `${ex.name} ($${ex.price})`).join(", ")}
               </p>
             )}
             <p>Status: {item.available ? "✅ Available" : "❌ Unavailable"}</p>
+
+            {/* 🔹 NEW: Toggle button */}
+            <button onClick={() => toggleAvailability(item)}>
+              {item.available ? "Set Unavailable" : "Set Available"}
+            </button>
+
             <button onClick={() => handleEdit(item)}>Edit</button>
             <button onClick={() => handleDelete(item.id)}>Delete</button>
           </div>
