@@ -17,6 +17,10 @@ export default function ProductDetail() {
   const [selectedCheese, setSelectedCheese] = useState([]);
   const [selectedDescription, setSelectedDescription] = useState([]);
 
+  // NEW: separate sauces for "คู่หู"
+  const [selectedBingsuSauce, setSelectedBingsuSauce] = useState(null);
+  const [selectedBreadSauce, setSelectedBreadSauce] = useState(null);
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -36,34 +40,32 @@ export default function ProductDetail() {
   }, [id]);
 
   const toggleSauce = (sauce) => {
-  if (!product) return;
+    if (!product) return;
 
-  const mode = product.mode;
+    const mode = product.mode;
 
-  if (mode === "บิงซูสายไหม" || mode === "ขนมปังปิ้ง") {
-    if (selectedSauce.includes(sauce)) {
-      setSelectedSauce([]);
+    if (mode === "บิงซูสายไหม" || mode === "ขนมปังปิ้ง") {
+      if (selectedSauce.includes(sauce)) {
+        setSelectedSauce([]);
+      } else {
+        setSelectedSauce([sauce]);
+      }
+
+    } else if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
+      if (selectedSauce.includes(sauce)) {
+        setSelectedSauce(selectedSauce.filter(s => s !== sauce));
+      } else if (selectedSauce.length < 2) {
+        setSelectedSauce([...selectedSauce, sauce]);
+      }
+
     } else {
-      setSelectedSauce([sauce]);
+      if (selectedSauce.includes(sauce)) {
+        setSelectedSauce(selectedSauce.filter(s => s !== sauce));
+      } else {
+        setSelectedSauce([...selectedSauce, sauce]);
+      }
     }
-
-  } else if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
-    if (selectedSauce.includes(sauce)) {
-      setSelectedSauce(selectedSauce.filter(s => s !== sauce));
-    } else if (selectedSauce.length < 2) {
-      setSelectedSauce([...selectedSauce, sauce]);
-    }
-
-  } else {
-    if (selectedSauce.includes(sauce)) {
-      setSelectedSauce(selectedSauce.filter(s => s !== sauce));
-    } else {
-      setSelectedSauce([...selectedSauce, sauce]);
-    }
-  }
-};
-
-
+  };
 
   const toggleDescription = (description) => {
     if (selectedDescription.includes(description)) {
@@ -83,27 +85,26 @@ export default function ProductDetail() {
   };
 
   const toggleFlavor = (flavor) => {
-  if (!product) return;
+    if (!product) return;
 
-  const mode = product.mode;
+    const mode = product.mode;
 
-  if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
-    // Only one flavor allowed
-    if (selectedFlavor.includes(flavor)) {
-      setSelectedFlavor([]);
+    if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
+      // Only one flavor allowed
+      if (selectedFlavor.includes(flavor)) {
+        setSelectedFlavor([]);
+      } else {
+        setSelectedFlavor([flavor]);
+      }
     } else {
-      setSelectedFlavor([flavor]);
+      // Default: allow multiple
+      if (selectedFlavor.includes(flavor)) {
+        setSelectedFlavor(selectedFlavor.filter(f => f !== flavor));
+      } else {
+        setSelectedFlavor([...selectedFlavor, flavor]);
+      }
     }
-  } else {
-    // Default: allow multiple
-    if (selectedFlavor.includes(flavor)) {
-      setSelectedFlavor(selectedFlavor.filter(f => f !== flavor));
-    } else {
-      setSelectedFlavor([...selectedFlavor, flavor]);
-    }
-  }
-};
-
+  };
 
   const toggleCheese = (cheese) => {
     const found = selectedCheese.find(c => c.name === cheese.name);
@@ -122,16 +123,34 @@ export default function ProductDetail() {
     }
   };
 
+  // NEW: helpers for คู่หู sauce pickers (single choice each)
+  const toggleBingsuSauce = (sauce) => {
+    setSelectedBingsuSauce(prev => (prev === sauce ? null : sauce));
+  };
+  const toggleBreadSauce = (sauce) => {
+    setSelectedBreadSauce(prev => (prev === sauce ? null : sauce));
+  };
+
   const handleAdd = () => {
     if (product) {
       const extraTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
       const cheeseTotal = selectedCheese.reduce((sum, c) => sum + c.price, 0);
+
+      // NEW: package sauces for "คู่หู" as labeled strings so other pages still render correctly
+      const saucesForCart =
+        product.mode === "คู่หู"
+          ? [
+              selectedBingsuSauce ? `Bingsu: ${selectedBingsuSauce}` : null,
+              selectedBreadSauce ? `Bread: ${selectedBreadSauce}` : null,
+            ].filter(Boolean)
+          : selectedSauce;
+
       addToCart({
         id: product.id,
         name: product.name,
         price: product.price,
         quantity,
-        sauces: selectedSauce,
+        sauces: saucesForCart,
         extras: selectedExtras,
         extraPrice: extraTotal,
         flavors: selectedFlavor,
@@ -145,6 +164,8 @@ export default function ProductDetail() {
   };
 
   if (!product) return <p>Loading...</p>;
+
+  const isKuhu = product.mode === "คู่หู";
 
   return (
     <div className={styles.page}>
@@ -179,7 +200,49 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {product.sauces?.length > 0 && (
+          {/* NEW: For "คู่หู", show two separate sauce pickers */}
+          {isKuhu && product.sauces?.length > 0 && (
+            <>
+              <div className={styles.sauces}>
+                <h4>Choose Bingsu Sauce:</h4>
+                <div className={styles.sauceButtons}>
+                  {product.sauces.map((sauce, i) => (
+                    <button
+                      key={`b-${i}`}
+                      type="button"
+                      className={`${styles.sauceButton} ${
+                        selectedBingsuSauce === sauce ? styles.selected : ""
+                      }`}
+                      onClick={() => toggleBingsuSauce(sauce)}
+                    >
+                      {sauce}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.sauces}>
+                <h4>Choose Bread Sauce:</h4>
+                <div className={styles.sauceButtons}>
+                  {product.sauces.map((sauce, i) => (
+                    <button
+                      key={`br-${i}`}
+                      type="button"
+                      className={`${styles.sauceButton} ${
+                        selectedBreadSauce === sauce ? styles.selected : ""
+                      }`}
+                      onClick={() => toggleBreadSauce(sauce)}
+                    >
+                      {sauce}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Original sauce block — shown for all other modes */}
+          {!isKuhu && product.sauces?.length > 0 && (
             <div className={styles.sauces}>
               <h4>Choose Sauce :</h4>
               <div className={styles.sauceButtons}>
@@ -292,15 +355,14 @@ export default function ProductDetail() {
               />
             </label>
             <button
-  className={styles.addToCartButton}
-  onClick={() => {
-    handleAdd();
-    window.location.href = "/";
-  }}
->
-  Add to Cart
-</button>
-
+              className={styles.addToCartButton}
+              onClick={() => {
+                handleAdd();
+                window.location.href = "/";
+              }}
+            >
+              Add to Cart
+            </button>
           </div>
         </div>
       </div>

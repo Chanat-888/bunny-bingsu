@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./AdminOrders.module.css";
 import { db } from "../firebase";
 import {
@@ -13,17 +13,99 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
 
+  // --- Sound controls (no changes to your old functions) ---
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const soundEnabledRef = useRef(false); // keeps the up-to-date value inside snapshot callback
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  const audioCtxRef = useRef(null);
+  const initializedSnapshotRef = useRef(false);
+
+  const enableSound = async () => {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new Ctx();
+      await ctx.resume();
+      audioCtxRef.current = ctx;
+      setSoundEnabled(true);
+      playBeep(); // tiny confirmation
+    } catch (e) {
+      console.error("Unable to enable sound:", e);
+    }
+  };
+
+  const disableSound = async () => {
+    setSoundEnabled(false);
+    try {
+      await audioCtxRef.current?.close();
+    } catch (_) {}
+    audioCtxRef.current = null;
+  };
+
+  const playBeep = () => {
+  const ctx = audioCtxRef.current;
+  if (!ctx) return;
+
+  const ringOnce = (startAt) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    // Bell-ish/phone-like ping
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(1200, startAt);                // start bright
+    osc.frequency.exponentialRampToValueAtTime(650, startAt + 0.25); // quick downward sweep
+
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.25, startAt + 0.02);    // fast attack
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.35);  // decay tail
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(startAt);
+    osc.stop(startAt + 0.4);
+  };
+
+  const now = ctx.currentTime;
+  ringOnce(now);        // first “ring”
+  ringOnce(now + 0.5);  // second “ring”
+};
+
+
+  useEffect(() => {
+    return () => {
+      // cleanup audio on unmount
+      disableSound();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // --- End sound controls ---
+
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
-      const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const fetched = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       const sorted = [...fetched].sort((a, b) => {
         const aTime = a.createdAt?.toMillis?.() || 0;
         const bTime = b.createdAt?.toMillis?.() || 0;
         return bTime - aTime;
       });
+
+      // Detect newly added docs (skip the very first snapshot)
+      const hadAddition = snapshot.docChanges().some((c) => c.type === "added");
+
+      if (!initializedSnapshotRef.current) {
+        initializedSnapshotRef.current = true; // don't beep on initial load
+      } else if (hadAddition && soundEnabledRef.current) {
+        playBeep();
+      }
+
       setOrders(sorted);
     });
+
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const total = orders.reduce((sum, o) => {
@@ -89,6 +171,27 @@ export default function AdminOrders() {
   return (
     <div className={styles.page}>
       <h1>Admin Orders</h1>
+
+      {/* Sound toggle UI */}
+      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "0.75rem" }}>
+        <button
+          onClick={soundEnabled ? disableSound : enableSound}
+          style={{
+            backgroundColor: soundEnabled ? "#28a745" : "#6c757d",
+            color: "#fff",
+            padding: "0.4rem 0.9rem",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          {soundEnabled ? "🔔 Sound On" : "🔕 Enable Sound"}
+        </button>
+        <span style={{ fontSize: "0.9rem", color: "#555" }}>
+          Plays a ding when a new order arrives.
+        </span>
+      </div>
+
       <p>Total Sales (All Time): ฿{total.toFixed(2)}</p>
       <p>Total Sales ({activeDate}): ฿{dailyTotal.toFixed(2)}</p>
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
@@ -172,13 +275,15 @@ export default function AdminOrders() {
 
             <p className={styles.orderTotal}>
               Order Total: ฿
-              {order.items.reduce((sum, item) => {
-                const extras = item.extras || [];
-                const cheeses = item.cheeses || [];
-                const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
-                const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
-                return sum + (item.price + extrasTotal + cheesesTotal) * item.quantity;
-              }, 0).toFixed(2)}
+              {order.items
+                .reduce((sum, item) => {
+                  const extras = item.extras || [];
+                  const cheeses = item.cheeses || [];
+                  const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
+                  const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
+                  return sum + (item.price + extrasTotal + cheesesTotal) * item.quantity;
+                }, 0)
+                .toFixed(2)}
             </p>
 
             {!order.served && (
