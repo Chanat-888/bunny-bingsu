@@ -15,7 +15,7 @@ export default function AdminOrders() {
 
   // --- Sound controls (no changes to your old functions) ---
   const [soundEnabled, setSoundEnabled] = useState(false);
-  const soundEnabledRef = useRef(false); // keeps the up-to-date value inside snapshot callback
+  const soundEnabledRef = useRef(false);
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
   }, [soundEnabled]);
@@ -30,7 +30,7 @@ export default function AdminOrders() {
       await ctx.resume();
       audioCtxRef.current = ctx;
       setSoundEnabled(true);
-      playBeep(); // tiny confirmation
+      playBeep();
     } catch (e) {
       console.error("Unable to enable sound:", e);
     }
@@ -45,43 +45,39 @@ export default function AdminOrders() {
   };
 
   const playBeep = () => {
-  const ctx = audioCtxRef.current;
-  if (!ctx) return;
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
 
-  const ringOnce = (startAt) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
+    const ringOnce = (startAt) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-    // Bell-ish/phone-like ping
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(1200, startAt);                // start bright
-    osc.frequency.exponentialRampToValueAtTime(650, startAt + 0.25); // quick downward sweep
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(1200, startAt);
+      osc.frequency.exponentialRampToValueAtTime(650, startAt + 0.25);
 
-    gain.gain.setValueAtTime(0.0001, startAt);
-    gain.gain.exponentialRampToValueAtTime(0.25, startAt + 0.02);    // fast attack
-    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.35);  // decay tail
+      gain.gain.setValueAtTime(0.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.25, startAt + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.35);
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
 
-    osc.start(startAt);
-    osc.stop(startAt + 0.4);
+      osc.start(startAt);
+      osc.stop(startAt + 0.4);
+    };
+
+    const now = ctx.currentTime;
+    ringOnce(now);
+    ringOnce(now + 0.5);
   };
-
-  const now = ctx.currentTime;
-  ringOnce(now);        // first “ring”
-  ringOnce(now + 0.5);  // second “ring”
-};
-
 
   useEffect(() => {
     return () => {
-      // cleanup audio on unmount
       disableSound();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // --- End sound controls ---
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
@@ -92,11 +88,10 @@ export default function AdminOrders() {
         return bTime - aTime;
       });
 
-      // Detect newly added docs (skip the very first snapshot)
       const hadAddition = snapshot.docChanges().some((c) => c.type === "added");
 
       if (!initializedSnapshotRef.current) {
-        initializedSnapshotRef.current = true; // don't beep on initial load
+        initializedSnapshotRef.current = true;
       } else if (hadAddition && soundEnabledRef.current) {
         playBeep();
       }
@@ -107,20 +102,6 @@ export default function AdminOrders() {
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const total = orders.reduce((sum, o) => {
-    if (!o.served) return sum;
-    return (
-      sum +
-      o.items.reduce((s, i) => {
-        const extras = i.extras || [];
-        const cheeses = i.cheeses || [];
-        const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
-        const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
-        return s + (i.price + extrasTotal + cheesesTotal) * i.quantity;
-      }, 0)
-    );
-  }, 0);
 
   const handleServe = async (id) => {
     await updateDoc(doc(db, "orders", id), { served: true });
@@ -154,8 +135,9 @@ export default function AdminOrders() {
   const dates = Object.keys(groupedOrders).sort((a, b) => new Date(b) - new Date(a));
   const activeDate = selectedDate || dates[0];
 
+  // ✅ Daily total now counts only paid orders
   const dailyTotal = (groupedOrders[activeDate] || []).reduce((sum, o) => {
-    if (!o.served) return sum;
+    if (!o.paid) return sum;
     return (
       sum +
       o.items.reduce((s, i) => {
@@ -192,8 +174,9 @@ export default function AdminOrders() {
         </span>
       </div>
 
-      <p>Total Sales (All Time): ฿{total.toFixed(2)}</p>
+      {/* Removed Total Sales (All Time) */}
       <p>Total Sales ({activeDate}): ฿{dailyTotal.toFixed(2)}</p>
+
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
         <button className={styles.clearButton} onClick={handleClear}>
           Clear All History
@@ -310,7 +293,6 @@ export default function AdminOrders() {
               </button>
             )}
 
-            {/* New Buttons */}
             <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
               <button
                 onClick={async () => {
