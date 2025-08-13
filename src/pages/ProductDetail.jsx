@@ -50,12 +50,14 @@ export default function ProductDetail() {
       } else {
         setSelectedSauce([sauce]);
       }
+
     } else if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
       if (selectedSauce.includes(sauce)) {
         setSelectedSauce(selectedSauce.filter(s => s !== sauce));
       } else if (selectedSauce.length < 2) {
         setSelectedSauce([...selectedSauce, sauce]);
       }
+
     } else {
       if (selectedSauce.includes(sauce)) {
         setSelectedSauce(selectedSauce.filter(s => s !== sauce));
@@ -88,12 +90,14 @@ export default function ProductDetail() {
     const mode = product.mode;
 
     if (mode === "คู่หู" || mode === "ทวิสเตอร์") {
+      // Only one flavor allowed
       if (selectedFlavor.includes(flavor)) {
         setSelectedFlavor([]);
       } else {
         setSelectedFlavor([flavor]);
       }
     } else {
+      // Default: allow multiple
       if (selectedFlavor.includes(flavor)) {
         setSelectedFlavor(selectedFlavor.filter(f => f !== flavor));
       } else {
@@ -112,14 +116,22 @@ export default function ProductDetail() {
   };
 
   const toggleTopping = (topping) => {
-    if (selectedTopping.includes(topping)) {
-      setSelectedTopping(selectedTopping.filter(t => t !== topping));
-    } else {
-      setSelectedTopping([...selectedTopping, topping]);
-    }
-  };
+  if (!product) return;
 
-  // NEW: helpers for คู่หู sauce pickers
+  const mode = product.mode;
+
+  if (selectedTopping.includes(topping)) {
+    setSelectedTopping(selectedTopping.filter(t => t !== topping));
+  } else {
+    if (mode === "ทวิสเตอร์" && selectedTopping.length >= 3) {
+      return; // do nothing if already picked 3
+    }
+    setSelectedTopping([...selectedTopping, topping]);
+  }
+};
+
+
+  // NEW: helpers for คู่หู sauce pickers (single choice each)
   const toggleBingsuSauce = (sauce) => {
     setSelectedBingsuSauce(prev => (prev === sauce ? null : sauce));
   };
@@ -132,6 +144,7 @@ export default function ProductDetail() {
       const extraTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
       const cheeseTotal = selectedCheese.reduce((sum, c) => sum + c.price, 0);
 
+      // NEW: package sauces for "คู่หู" as labeled strings so other pages still render correctly
       const saucesForCart =
         product.mode === "คู่หู"
           ? [
@@ -173,6 +186,8 @@ export default function ProductDetail() {
           <p>฿{product.price}</p>
           <p style={{ fontStyle: "italic", color: "gray" }}>หมวด: {product.mode}</p>
 
+          {/* existing components remain unchanged */}
+
           {product.descriptions?.length > 0 && (
             <div className={styles.sauces}>
               <h4>Description</h4>
@@ -185,7 +200,6 @@ export default function ProductDetail() {
                       selectedDescription.includes(description) ? styles.description : ""
                     }`}
                     onClick={() => toggleDescription(description)}
-                    onTouchStart={() => toggleDescription(description)}
                   >
                     {description}
                   </button>
@@ -194,6 +208,7 @@ export default function ProductDetail() {
             </div>
           )}
 
+          {/* NEW: For "คู่หู", show two separate sauce pickers */}
           {isKuhu && product.sauces?.length > 0 && (
             <>
               <div className={styles.sauces}>
@@ -207,7 +222,6 @@ export default function ProductDetail() {
                         selectedBingsuSauce === sauce ? styles.selected : ""
                       }`}
                       onClick={() => toggleBingsuSauce(sauce)}
-                      onTouchStart={() => toggleBingsuSauce(sauce)}
                     >
                       {sauce}
                     </button>
@@ -226,7 +240,6 @@ export default function ProductDetail() {
                         selectedBreadSauce === sauce ? styles.selected : ""
                       }`}
                       onClick={() => toggleBreadSauce(sauce)}
-                      onTouchStart={() => toggleBreadSauce(sauce)}
                     >
                       {sauce}
                     </button>
@@ -236,6 +249,7 @@ export default function ProductDetail() {
             </>
           )}
 
+          {/* Original sauce block — shown for all other modes */}
           {!isKuhu && product.sauces?.length > 0 && (
             <div className={styles.sauces}>
               <h4>Choose Sauce :</h4>
@@ -248,7 +262,11 @@ export default function ProductDetail() {
                       selectedSauce.includes(sauce) ? styles.selected : ""
                     }`}
                     onClick={() => toggleSauce(sauce)}
-                    onTouchStart={() => toggleSauce(sauce)}
+onTouchEnd={(e) => {
+  e.preventDefault(); // prevent ghost click delay
+  toggleSauce(sauce);
+}}
+
                   >
                     {sauce}
                   </button>
@@ -271,7 +289,6 @@ export default function ProductDetail() {
                         selected ? styles.selected : ""
                       }`}
                       onClick={() => toggleExtra(extra)}
-                      onTouchStart={() => toggleExtra(extra)}
                     >
                       {extra.name} (+฿{extra.price})
                     </button>
@@ -291,7 +308,6 @@ export default function ProductDetail() {
                     type="button"
                     className={`${styles.sauceButton} ${selectedFlavor.includes(flavor) ? styles.selected : ""}`}
                     onClick={() => toggleFlavor(flavor)}
-                    onTouchStart={() => toggleFlavor(flavor)}
                   >
                     {flavor}
                   </button>
@@ -314,7 +330,6 @@ export default function ProductDetail() {
                         selected ? styles.selected : ""
                       }`}
                       onClick={() => toggleCheese(cheese)}
-                      onTouchStart={() => toggleCheese(cheese)}
                     >
                       {cheese.name} (+฿{cheese.price})
                     </button>
@@ -334,7 +349,6 @@ export default function ProductDetail() {
                     type="button"
                     className={`${styles.sauceButton} ${selectedTopping.includes(topping) ? styles.selected : ""}`}
                     onClick={() => toggleTopping(topping)}
-                    onTouchStart={() => toggleTopping(topping)}
                   >
                     {topping}
                   </button>
