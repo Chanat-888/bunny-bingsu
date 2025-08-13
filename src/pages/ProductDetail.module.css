@@ -48,13 +48,14 @@
   background: white;
 }
 
-/* NEW: unified style for all option buttons (sauces, extras, etc.) */
+/* Sauce buttons container */
 .sauceButtons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
+/* Base style for all option buttons */
 .sauceButton {
   padding: 0.5rem 1rem;
   border: 1px solid #ccc;
@@ -65,12 +66,21 @@
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-/* hover effect for PC */
-.sauceButton:hover {
-  background-color: #eee;
+/* ====== PC ONLY (hover devices) ====== */
+@media (hover: hover) and (pointer: fine) {
+  .sauceButton:hover {
+    background-color: #eee; /* hover feedback */
+  }
 }
 
-/* selected state — works on PC & mobile */
+/* ====== MOBILE ONLY (no hover, coarse pointer) ====== */
+@media (hover: none) and (pointer: coarse) {
+  .sauceButton:active {
+    background-color: #ffb3b3; /* tap feedback */
+  }
+}
+
+/* Selected state — applies to both PC and mobile */
 .selected {
   background-color: #ff5c5c !important;
   color: white !important;
