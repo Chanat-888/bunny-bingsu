@@ -62,7 +62,7 @@
   border-radius: 20px;
   cursor: pointer;
   background-color: white;
-  color: #333;
+  color: #c91a1aff;
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
