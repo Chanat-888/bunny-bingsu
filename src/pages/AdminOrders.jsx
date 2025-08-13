@@ -126,36 +126,38 @@ export default function AdminOrders() {
     }
   };
 
-  // ✅ Merge same table & not paid orders
+    // ✅ Merge unpaid orders for a specific table
   const handleMergeSameTable = async () => {
-    const tables = {};
-    orders.forEach((o) => {
-      if (!o.paid) {
-        if (!tables[o.table]) tables[o.table] = [];
-        tables[o.table].push(o);
-      }
+    const tableNumber = prompt("Enter the table number to merge unpaid orders for:");
+    if (!tableNumber) return;
+
+    const tableOrders = orders.filter(
+      (o) => o.table === tableNumber && !o.paid
+    );
+
+    if (tableOrders.length < 2) {
+      alert(`No multiple unpaid orders found for table ${tableNumber}.`);
+      return;
+    }
+
+    const [main, ...others] = tableOrders;
+    const mergedItems = [...main.items];
+
+    others.forEach((o) => {
+      mergedItems.push(...o.items);
     });
 
-    for (const table in tables) {
-      if (tables[table].length > 1) {
-        const [main, ...others] = tables[table];
-        const mergedItems = [...main.items];
+    // Update main order
+    await updateDoc(doc(db, "orders", main.id), { items: mergedItems });
 
-        others.forEach((o) => {
-          mergedItems.push(...o.items);
-        });
-
-        // Update main order
-        await updateDoc(doc(db, "orders", main.id), { items: mergedItems });
-
-        // Delete merged orders
-        for (const o of others) {
-          await deleteDoc(doc(db, "orders", o.id));
-        }
-      }
+    // Delete merged orders
+    for (const o of others) {
+      await deleteDoc(doc(db, "orders", o.id));
     }
-    alert("Merged same table orders successfully!");
+
+    alert(`Merged unpaid orders for table ${tableNumber} successfully!`);
   };
+
 
   const groupedOrders = orders.reduce((groups, order) => {
     const dateKey = order.createdAt?.toDate().toLocaleDateString() || "Unknown Date";
