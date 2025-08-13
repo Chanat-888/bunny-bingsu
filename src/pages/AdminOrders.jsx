@@ -7,6 +7,7 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
+  addDoc,
 } from "firebase/firestore";
 
 export default function AdminOrders() {
@@ -125,6 +126,37 @@ export default function AdminOrders() {
     }
   };
 
+  // ✅ Merge same table & not paid orders
+  const handleMergeSameTable = async () => {
+    const tables = {};
+    orders.forEach((o) => {
+      if (!o.paid) {
+        if (!tables[o.table]) tables[o.table] = [];
+        tables[o.table].push(o);
+      }
+    });
+
+    for (const table in tables) {
+      if (tables[table].length > 1) {
+        const [main, ...others] = tables[table];
+        const mergedItems = [...main.items];
+
+        others.forEach((o) => {
+          mergedItems.push(...o.items);
+        });
+
+        // Update main order
+        await updateDoc(doc(db, "orders", main.id), { items: mergedItems });
+
+        // Delete merged orders
+        for (const o of others) {
+          await deleteDoc(doc(db, "orders", o.id));
+        }
+      }
+    }
+    alert("Merged same table orders successfully!");
+  };
+
   const groupedOrders = orders.reduce((groups, order) => {
     const dateKey = order.createdAt?.toDate().toLocaleDateString() || "Unknown Date";
     if (!groups[dateKey]) groups[dateKey] = [];
@@ -187,6 +219,13 @@ export default function AdminOrders() {
           onClick={handleClearSelectedDate}
         >
           Clear {activeDate} History
+        </button>
+        <button
+          className={styles.clearButton}
+          style={{ backgroundColor: "#17a2b8" }}
+          onClick={handleMergeSameTable}
+        >
+          Merge Same Table (Unpaid)
         </button>
       </div>
 
