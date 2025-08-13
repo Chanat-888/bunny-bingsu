@@ -48,10 +48,33 @@
   background: white;
 }
 
+/* NEW: unified style for all option buttons (sauces, extras, etc.) */
+.sauceButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sauceButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  cursor: pointer;
+  background-color: white;
+  color: #333;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* hover effect for PC */
+.sauceButton:hover {
+  background-color: #eee;
+}
+
+/* selected state — works on PC & mobile */
 .selected {
-  background-color: #ff5c5c;
-  color: white;
-  border-color: #ff5c5c;
+  background-color: #ff5c5c !important;
+  color: white !important;
+  border-color: #ff5c5c !important;
 }
 
 .addButton {
