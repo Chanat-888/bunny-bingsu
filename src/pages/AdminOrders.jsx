@@ -169,7 +169,19 @@ export default function AdminOrders() {
   const dates = Object.keys(groupedOrders).sort((a, b) => new Date(b) - new Date(a));
   const activeDate = selectedDate || dates[0];
 
-  // ✅ Daily total now counts only paid orders
+  // ✅ Delete a single item from an order
+const handleDeleteItem = async (orderId, itemIndex) => {
+  const orderRef = doc(db, "orders", orderId);
+  const targetOrder = orders.find((o) => o.id === orderId);
+  if (!targetOrder) return;
+
+  const updatedItems = [...targetOrder.items];
+  updatedItems.splice(itemIndex, 1); // remove 1 item at index
+
+  await updateDoc(orderRef, { items: updatedItems });
+};
+
+
   const dailyTotal = (groupedOrders[activeDate] || []).reduce((sum, o) => {
     if (!o.paid) return sum;
     return (
@@ -265,37 +277,56 @@ export default function AdminOrders() {
             <p>Time: {order.createdAt?.toDate().toLocaleString()}</p>
 
             <ul>
-              {order.items.map((item, idx) => (
-                <li key={idx}>
-                  {item.name} x{item.quantity}
-                  {item.sauces?.length > 0 && (
-                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                      Sauces: {item.sauces.join(", ")}
-                    </span>
-                  )}
-                  {item.flavors?.length > 0 && (
-                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                      Flavors: {item.flavors.join(", ")}
-                    </span>
-                  )}
-                  {item.toppings?.length > 0 && (
-                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                      Toppings: {item.toppings.join(", ")}
-                    </span>
-                  )}
-                  {item.extras?.length > 0 && (
-                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                      Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
-                    </span>
-                  )}
-                  {item.cheeses?.length > 0 && (
-                    <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                      Cheeses: {item.cheeses.map((ch) => `${ch.name} (+$${ch.price})`).join(", ")}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
+  {order.items.map((item, idx) => (
+    <li key={idx} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <span>
+        {item.name} x{item.quantity}
+        {item.sauces?.length > 0 && (
+          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+            Sauces: {item.sauces.join(", ")}
+          </span>
+        )}
+        {item.flavors?.length > 0 && (
+          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+            Flavors: {item.flavors.join(", ")}
+          </span>
+        )}
+        {item.toppings?.length > 0 && (
+          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+            Toppings: {item.toppings.join(", ")}
+          </span>
+        )}
+        {item.extras?.length > 0 && (
+          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+            Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
+          </span>
+        )}
+        {item.cheeses?.length > 0 && (
+          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+            Cheeses: {item.cheeses.map((ch) => `${ch.name} (+$${ch.price})`).join(", ")}
+          </span>
+        )}
+      </span>
+
+      {/* ✅ Delete button for each item */}
+      <button
+        onClick={() => handleDeleteItem(order.id, idx)}
+        style={{
+          marginLeft: "auto",
+          backgroundColor: "#dc3545",
+          color: "white",
+          padding: "0.2rem 0.6rem",
+          border: "none",
+          borderRadius: "4px",
+          cursor: "pointer",
+        }}
+      >
+        ✖
+      </button>
+    </li>
+  ))}
+</ul>
+
 
             <p className={styles.orderTotal}>
               Order Total: ฿

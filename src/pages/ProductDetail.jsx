@@ -140,36 +140,72 @@ export default function ProductDetail() {
   };
 
   const handleAdd = () => {
-    if (product) {
-      const extraTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
-      const cheeseTotal = selectedCheese.reduce((sum, c) => sum + c.price, 0);
+  if (!product) return;
 
-      // NEW: package sauces for "คู่หู" as labeled strings so other pages still render correctly
-      const saucesForCart =
-        product.mode === "คู่หู"
-          ? [
-              selectedBingsuSauce ? `Bingsu: ${selectedBingsuSauce}` : null,
-              selectedBreadSauce ? `Bread: ${selectedBreadSauce}` : null,
-            ].filter(Boolean)
-          : selectedSauce;
-
-      addToCart({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        quantity,
-        sauces: saucesForCart,
-        extras: selectedExtras,
-        extraPrice: extraTotal,
-        flavors: selectedFlavor,
-        toppings: selectedTopping,
-        cheeses: selectedCheese,
-        cheesePrice: cheeseTotal,
-        description: selectedDescription,
-        mode: product.mode
-      });
+  // Validation checks
+  if (product.sauces?.length > 0) {
+    if (product.mode === "คู่หู") {
+      if (!selectedBingsuSauce) {
+        alert("เลือกซอสบิงซูก่อนกดสั่ง");
+        return;
+      }
+      if (!selectedBreadSauce) {
+        alert("เลือกซอสขนมปังก่อนกดสั่ง");
+        return;
+      }
+    } else if (selectedSauce.length === 0) {
+      alert("เลือกซอสก่อนกดสั่ง");
+      return;
     }
-  };
+  }
+
+  if (product.flavors?.length > 0 && selectedFlavor.length === 0) {
+    alert("เลือกรสชาติ ก่อนกดสั่ง");
+    return;
+  }
+
+  if (product.toppings?.length > 0 && selectedTopping.length === 0) {
+    alert("เลือกท็อปปิ้ง ก่อนกดสั่ง");
+    return;
+  }
+
+  if (product.cheeses?.length > 0 && selectedCheese.length === 0) {
+    alert("เลือกชีส ก่อนกดสั่ง");
+    return;
+  }
+
+  const extraTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
+  const cheeseTotal = selectedCheese.reduce((sum, c) => sum + c.price, 0);
+
+  const saucesForCart =
+    product.mode === "คู่หู"
+      ? [
+          selectedBingsuSauce ? `Bingsu: ${selectedBingsuSauce}` : null,
+          selectedBreadSauce ? `Bread: ${selectedBreadSauce}` : null,
+        ].filter(Boolean)
+      : selectedSauce;
+
+  addToCart({
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    quantity,
+    sauces: saucesForCart,
+    extras: selectedExtras,
+    extraPrice: extraTotal,
+    flavors: selectedFlavor,
+    toppings: selectedTopping,
+    cheeses: selectedCheese,
+    cheesePrice: cheeseTotal,
+    description: selectedDescription,
+    mode: product.mode
+  });
+
+  // ✅ Redirect only if everything is valid
+  window.location.href = "/";
+};
+
+
 
   if (!product) return <p>Loading...</p>;
 
@@ -368,14 +404,12 @@ onTouchEnd={(e) => {
               />
             </label>
             <button
-              className={styles.addToCartButton}
-              onClick={() => {
-                handleAdd();
-                window.location.href = "/";
-              }}
-            >
-              Add to Cart
-            </button>
+  className={styles.addToCartButton}
+  onClick={handleAdd}
+>
+  Add to Cart
+</button>
+
           </div>
         </div>
       </div>
