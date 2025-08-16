@@ -14,12 +14,14 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
 
-  // --- Sound controls (no changes to your old functions) ---
-  const [soundEnabled, setSoundEnabled] = useState(false);
-  const soundEnabledRef = useRef(false);
-  useEffect(() => {
-    soundEnabledRef.current = soundEnabled;
-  }, [soundEnabled]);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+const soundEnabledRef = useRef(true);
+
+useEffect(() => {
+  soundEnabledRef.current = true;   // force true, ignore user setting
+  if (!soundEnabled) setSoundEnabled(true); // reset if turned off
+}, [soundEnabled]);
+
 
   const audioCtxRef = useRef(null);
   const initializedSnapshotRef = useRef(false);
