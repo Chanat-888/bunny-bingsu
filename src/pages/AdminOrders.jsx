@@ -14,14 +14,9 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
 
-  const [soundEnabled, setSoundEnabled] = useState(true);
-const soundEnabledRef = useRef(true);
-
-useEffect(() => {
-  soundEnabledRef.current = true;   // force true, ignore user setting
-  if (!soundEnabled) setSoundEnabled(true); // reset if turned off
-}, [soundEnabled]);
-
+  // 🔔 Always-on sound
+  const [soundEnabled] = useState(true);
+  const soundEnabledRef = useRef(true);
 
   const audioCtxRef = useRef(null);
   const initializedSnapshotRef = useRef(false);
@@ -32,19 +27,10 @@ useEffect(() => {
       const ctx = new Ctx();
       await ctx.resume();
       audioCtxRef.current = ctx;
-      setSoundEnabled(true);
       playBeep();
     } catch (e) {
       console.error("Unable to enable sound:", e);
     }
-  };
-
-  const disableSound = async () => {
-    setSoundEnabled(false);
-    try {
-      await audioCtxRef.current?.close();
-    } catch (_) {}
-    audioCtxRef.current = null;
   };
 
   const playBeep = () => {
@@ -76,8 +62,12 @@ useEffect(() => {
   };
 
   useEffect(() => {
+    enableSound(); // always enable on mount
     return () => {
-      disableSound();
+      try {
+        audioCtxRef.current?.close();
+      } catch (_) {}
+      audioCtxRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -128,7 +118,7 @@ useEffect(() => {
     }
   };
 
-    // ✅ Merge unpaid orders for a specific table
+  // ✅ Merge unpaid orders for a specific table
   const handleMergeSameTable = async () => {
     const tableNumber = prompt("Enter the table number to merge unpaid orders for:");
     if (!tableNumber) return;
@@ -160,7 +150,6 @@ useEffect(() => {
     alert(`Merged unpaid orders for table ${tableNumber} successfully!`);
   };
 
-
   const groupedOrders = orders.reduce((groups, order) => {
     const dateKey = order.createdAt?.toDate().toLocaleDateString() || "Unknown Date";
     if (!groups[dateKey]) groups[dateKey] = [];
@@ -172,17 +161,16 @@ useEffect(() => {
   const activeDate = selectedDate || dates[0];
 
   // ✅ Delete a single item from an order
-const handleDeleteItem = async (orderId, itemIndex) => {
-  const orderRef = doc(db, "orders", orderId);
-  const targetOrder = orders.find((o) => o.id === orderId);
-  if (!targetOrder) return;
+  const handleDeleteItem = async (orderId, itemIndex) => {
+    const orderRef = doc(db, "orders", orderId);
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return;
 
-  const updatedItems = [...targetOrder.items];
-  updatedItems.splice(itemIndex, 1); // remove 1 item at index
+    const updatedItems = [...targetOrder.items];
+    updatedItems.splice(itemIndex, 1); // remove 1 item at index
 
-  await updateDoc(orderRef, { items: updatedItems });
-};
-
+    await updateDoc(orderRef, { items: updatedItems });
+  };
 
   const dailyTotal = (groupedOrders[activeDate] || []).reduce((sum, o) => {
     if (!o.paid) return sum;
@@ -202,20 +190,19 @@ const handleDeleteItem = async (orderId, itemIndex) => {
     <div className={styles.page}>
       <h1>Admin Orders</h1>
 
-      {/* Sound toggle UI */}
+      {/* Sound toggle UI removed, just show always-on */}
       <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "0.75rem" }}>
         <button
-          onClick={soundEnabled ? disableSound : enableSound}
+          disabled
           style={{
-            backgroundColor: soundEnabled ? "#28a745" : "#6c757d",
+            backgroundColor: "#28a745",
             color: "#fff",
             padding: "0.4rem 0.9rem",
             border: "none",
             borderRadius: "6px",
-            cursor: "pointer",
           }}
         >
-          {soundEnabled ? "🔔 Sound On" : "🔕 Enable Sound"}
+          🔔 Sound Always On
         </button>
         <span style={{ fontSize: "0.9rem", color: "#555" }}>
           Plays a ding when a new order arrives.
@@ -279,56 +266,55 @@ const handleDeleteItem = async (orderId, itemIndex) => {
             <p>Time: {order.createdAt?.toDate().toLocaleString()}</p>
 
             <ul>
-  {order.items.map((item, idx) => (
-    <li key={idx} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-      <span>
-        {item.name} x{item.quantity}
-        {item.sauces?.length > 0 && (
-          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-            Sauces: {item.sauces.join(", ")}
-          </span>
-        )}
-        {item.flavors?.length > 0 && (
-          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-            Flavors: {item.flavors.join(", ")}
-          </span>
-        )}
-        {item.toppings?.length > 0 && (
-          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-            Toppings: {item.toppings.join(", ")}
-          </span>
-        )}
-        {item.extras?.length > 0 && (
-          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-            Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
-          </span>
-        )}
-        {item.cheeses?.length > 0 && (
-          <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-            Cheeses: {item.cheeses.map((ch) => `${ch.name} (+$${ch.price})`).join(", ")}
-          </span>
-        )}
-      </span>
+              {order.items.map((item, idx) => (
+                <li key={idx} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span>
+                    {item.name} x{item.quantity}
+                    {item.sauces?.length > 0 && (
+                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                        Sauces: {item.sauces.join(", ")}
+                      </span>
+                    )}
+                    {item.flavors?.length > 0 && (
+                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                        Flavors: {item.flavors.join(", ")}
+                      </span>
+                    )}
+                    {item.toppings?.length > 0 && (
+                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                        Toppings: {item.toppings.join(", ")}
+                      </span>
+                    )}
+                    {item.extras?.length > 0 && (
+                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                        Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
+                      </span>
+                    )}
+                    {item.cheeses?.length > 0 && (
+                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                        Cheeses: {item.cheeses.map((ch) => `${ch.name} (+$${ch.price})`).join(", ")}
+                      </span>
+                    )}
+                  </span>
 
-      {/* ✅ Delete button for each item */}
-      <button
-        onClick={() => handleDeleteItem(order.id, idx)}
-        style={{
-          marginLeft: "auto",
-          backgroundColor: "#dc3545",
-          color: "white",
-          padding: "0.2rem 0.6rem",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
-      >
-        ✖
-      </button>
-    </li>
-  ))}
-</ul>
-
+                  {/* ✅ Delete button for each item */}
+                  <button
+                    onClick={() => handleDeleteItem(order.id, idx)}
+                    style={{
+                      marginLeft: "auto",
+                      backgroundColor: "#dc3545",
+                      color: "white",
+                      padding: "0.2rem 0.6rem",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✖
+                  </button>
+                </li>
+              ))}
+            </ul>
 
             <p className={styles.orderTotal}>
               Order Total: ฿
