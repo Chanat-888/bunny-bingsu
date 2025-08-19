@@ -20,12 +20,22 @@ export default function AdminOrders() {
 
   const audioCtxRef = useRef(null);
   const initializedSnapshotRef = useRef(false);
+  const audioUnlockedRef = useRef(false);
 
   const enableSound = async () => {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new Ctx();
-      await ctx.resume();
+      let ctx = audioCtxRef.current;
+
+      // Create if missing or closed
+      if (!ctx || ctx.state === "closed") {
+        ctx = new Ctx();
+      }
+      // Try to resume if suspended
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+
       audioCtxRef.current = ctx;
       playBeep();
     } catch (e) {
@@ -61,8 +71,37 @@ export default function AdminOrders() {
     ringOnce(now + 0.5);
   };
 
+  // 🔓 One-time user-gesture unlock for stricter autoplay policies
   useEffect(() => {
-    enableSound(); // always enable on mount
+    const unlock = async () => {
+      if (audioUnlockedRef.current) return;
+      audioUnlockedRef.current = true;
+      await enableSound();
+      // remove listeners once unlocked
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    window.addEventListener("touchstart", unlock, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Keep the ref in sync in case you later toggle soundEnabled
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    // Try enabling immediately (may be suspended until user interacts)
+    enableSound();
     return () => {
       try {
         audioCtxRef.current?.close();
@@ -72,8 +111,26 @@ export default function AdminOrders() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ⛏️ Helper: auto-delete orders older than 4 days
+  const autoPurgeOldOrders = async (list) => {
+    const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const oldOnes = list.filter((o) => {
+      const ms = o.createdAt?.toMillis?.();
+      return typeof ms === "number" && now - ms > FOUR_DAYS_MS;
+    });
+
+    for (const o of oldOnes) {
+      try {
+        await deleteDoc(doc(db, "orders", o.id));
+      } catch (e) {
+        console.error("Auto-purge failed for", o.id, e);
+      }
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "orders"), (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, "orders"), async (snapshot) => {
       const fetched = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       const sorted = [...fetched].sort((a, b) => {
         const aTime = a.createdAt?.toMillis?.() || 0;
@@ -86,10 +143,16 @@ export default function AdminOrders() {
       if (!initializedSnapshotRef.current) {
         initializedSnapshotRef.current = true;
       } else if (hadAddition && soundEnabledRef.current) {
+        // Play sound on NEW orders only after initial snapshot
         playBeep();
       }
 
       setOrders(sorted);
+
+      // 🔥 Auto-purge anything older than 4 days (non-blocking)
+      autoPurgeOldOrders(sorted).catch((e) =>
+        console.error("Auto purge error:", e)
+      );
     });
 
     return () => unsubscribe();
@@ -112,7 +175,8 @@ export default function AdminOrders() {
   };
 
   const handleClearSelectedDate = async () => {
-    const targetOrders = groupedOrders[activeDate]?.filter((o) => o.served) || [];
+    const targetOrders =
+      groupedOrders[activeDate]?.filter((o) => o.served) || [];
     for (const order of targetOrders) {
       await deleteDoc(doc(db, "orders", order.id));
     }
@@ -120,7 +184,9 @@ export default function AdminOrders() {
 
   // ✅ Merge unpaid orders for a specific table
   const handleMergeSameTable = async () => {
-    const tableNumber = prompt("Enter the table number to merge unpaid orders for:");
+    const tableNumber = prompt(
+      "Enter the table number to merge unpaid orders for:"
+    );
     if (!tableNumber) return;
 
     const tableOrders = orders.filter(
@@ -151,13 +217,16 @@ export default function AdminOrders() {
   };
 
   const groupedOrders = orders.reduce((groups, order) => {
-    const dateKey = order.createdAt?.toDate().toLocaleDateString() || "Unknown Date";
+    const dateKey =
+      order.createdAt?.toDate().toLocaleDateString() || "Unknown Date";
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(order);
     return groups;
   }, {});
 
-  const dates = Object.keys(groupedOrders).sort((a, b) => new Date(b) - new Date(a));
+  const dates = Object.keys(groupedOrders).sort(
+    (a, b) => new Date(b) - new Date(a)
+  );
   const activeDate = selectedDate || dates[0];
 
   // ✅ Delete a single item from an order
@@ -179,8 +248,14 @@ export default function AdminOrders() {
       o.items.reduce((s, i) => {
         const extras = i.extras || [];
         const cheeses = i.cheeses || [];
-        const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
-        const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
+        const extrasTotal = extras.reduce(
+          (eSum, ex) => eSum + (ex.price || 0),
+          0
+        );
+        const cheesesTotal = cheeses.reduce(
+          (cSum, ch) => cSum + (ch.price || 0),
+          0
+        );
         return s + (i.price + extrasTotal + cheesesTotal) * i.quantity;
       }, 0)
     );
@@ -191,7 +266,14 @@ export default function AdminOrders() {
       <h1>Admin Orders</h1>
 
       {/* Sound toggle UI removed, just show always-on */}
-      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "0.75rem" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.75rem",
+          alignItems: "center",
+          marginBottom: "0.75rem",
+        }}
+      >
         <button
           disabled
           style={{
@@ -267,32 +349,71 @@ export default function AdminOrders() {
 
             <ul>
               {order.items.map((item, idx) => (
-                <li key={idx} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <li
+                  key={idx}
+                  style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+                >
                   <span>
                     {item.name} x{item.quantity}
                     {item.sauces?.length > 0 && (
-                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                      <span
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#555",
+                          marginLeft: "1rem",
+                        }}
+                      >
                         Sauces: {item.sauces.join(", ")}
                       </span>
                     )}
                     {item.flavors?.length > 0 && (
-                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                      <span
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#555",
+                          marginLeft: "1rem",
+                        }}
+                      >
                         Flavors: {item.flavors.join(", ")}
                       </span>
                     )}
                     {item.toppings?.length > 0 && (
-                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
+                      <span
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#555",
+                          marginLeft: "1rem",
+                        }}
+                      >
                         Toppings: {item.toppings.join(", ")}
                       </span>
                     )}
                     {item.extras?.length > 0 && (
-                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                        Extras: {item.extras.map((ex) => `${ex.name} (+$${ex.price})`).join(", ")}
+                      <span
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#555",
+                          marginLeft: "1rem",
+                        }}
+                      >
+                        Extras:{" "}
+                        {item.extras
+                          .map((ex) => `${ex.name} (+$${ex.price})`)
+                          .join(", ")}
                       </span>
                     )}
                     {item.cheeses?.length > 0 && (
-                      <span style={{ fontSize: "0.9rem", color: "#555", marginLeft: "1rem" }}>
-                        Cheeses: {item.cheeses.map((ch) => `${ch.name} (+$${ch.price})`).join(", ")}
+                      <span
+                        style={{
+                          fontSize: "0.9rem",
+                          color: "#555",
+                          marginLeft: "1rem",
+                        }}
+                      >
+                        Cheeses:{" "}
+                        {item.cheeses
+                          .map((ch) => `${ch.name} (+$${ch.price})`)
+                          .join(", ")}
                       </span>
                     )}
                   </span>
@@ -322,15 +443,24 @@ export default function AdminOrders() {
                 .reduce((sum, item) => {
                   const extras = item.extras || [];
                   const cheeses = item.cheeses || [];
-                  const extrasTotal = extras.reduce((eSum, ex) => eSum + (ex.price || 0), 0);
-                  const cheesesTotal = cheeses.reduce((cSum, ch) => cSum + (ch.price || 0), 0);
+                  const extrasTotal = extras.reduce(
+                    (eSum, ex) => eSum + (ex.price || 0),
+                    0
+                  );
+                  const cheesesTotal = cheeses.reduce(
+                    (cSum, ch) => cSum + (ch.price || 0),
+                    0
+                  );
                   return sum + (item.price + extrasTotal + cheesesTotal) * item.quantity;
                 }, 0)
                 .toFixed(2)}
             </p>
 
             {!order.served && (
-              <button className={styles.serveButton} onClick={() => handleServe(order.id)}>
+              <button
+                className={styles.serveButton}
+                onClick={() => handleServe(order.id)}
+              >
                 Mark as Served
               </button>
             )}
@@ -356,7 +486,9 @@ export default function AdminOrders() {
             <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
               <button
                 onClick={async () => {
-                  const confirmDelete = window.confirm("Are you sure you want to delete this order?");
+                  const confirmDelete = window.confirm(
+                    "Are you sure you want to delete this order?"
+                  );
                   if (confirmDelete) {
                     await deleteDoc(doc(db, "orders", order.id));
                   }
@@ -376,7 +508,9 @@ export default function AdminOrders() {
                 onClick={async () => {
                   const newTable = prompt("Enter new table number:", order.table);
                   if (newTable && newTable.trim() !== "") {
-                    await updateDoc(doc(db, "orders", order.id), { table: newTable.trim() });
+                    await updateDoc(doc(db, "orders", order.id), {
+                      table: newTable.trim(),
+                    });
                   }
                 }}
                 style={{
