@@ -14,6 +14,21 @@ export default function MenuPage() {
   const [popupVisible, setPopupVisible] = useState(false);
   const sectionRefs = useRef({}); // holds refs for each mode
 
+  // 🔹 custom order for modes
+  const MODE_ORDER = ["เค้ก", "ขนมปังปิ้ง", "บิงซูสายไหม", "ท็อปปิ้ง", "ทวิสเตอร์", "คู่หู" , "น้ำผลไม้ปั่น" , "Smoothie" , "น้ำผลไม้สกัด" ,  "น้ำอัดลม" , "เฟรนช์ฟรายส์"];
+
+  const orderIndex = (m) => {
+    const i = MODE_ORDER.indexOf(m);
+    return i === -1 ? MODE_ORDER.length + m.localeCompare("") : i;
+  };
+
+  const orderedModes = (group) =>
+    Object.keys(group).sort((a, b) => {
+      const ai = orderIndex(a);
+      const bi = orderIndex(b);
+      return ai === bi ? a.localeCompare(b, "th") : ai - bi;
+    });
+
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "menu"), (snapshot) => {
       const items = snapshot.docs.map((doc) => ({
@@ -34,7 +49,7 @@ export default function MenuPage() {
 
       // Initialize refs after grouping
       const refs = {};
-      Object.keys(grouped).forEach((mode) => {
+      orderedModes(grouped).forEach((mode) => {
         refs[mode] = refs[mode] || React.createRef();
       });
       sectionRefs.current = refs;
@@ -76,7 +91,7 @@ export default function MenuPage() {
 
       {/* ▶️ Buttons to scroll to each mode */}
       <div className={styles.modeNav}>
-        {Object.keys(groupedMenu).map((mode) => (
+        {orderedModes(groupedMenu).map((mode) => (
           <button
             key={mode}
             className={styles.modeButton}
@@ -87,7 +102,7 @@ export default function MenuPage() {
         ))}
       </div>
 
-      {Object.keys(groupedMenu).map((mode) => (
+      {orderedModes(groupedMenu).map((mode) => (
         <div key={mode} ref={sectionRefs.current[mode]} className={styles.section}>
           <h2 className={styles.modeTitle}>{mode}</h2>
           <div className={styles.grid}>
