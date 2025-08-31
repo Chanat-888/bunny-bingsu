@@ -117,13 +117,21 @@ export default function CheckoutPage() {
             <strong>฿{total}</strong>
           </div>
 
+          {/* 🔒 Show-only table number (no input) */}
           <div className={styles.tableRow}>
-  <label className={styles.tableLabel}>Table:</label>
-  <span className={styles.input}>{tableNumber}</span>
-</div>
+            <label className={styles.tableLabel}>Table:</label>
+            <span className={styles.input}>
+              {tableNumber || "No table"}
+            </span>
+          </div>
 
-
-          <button className={styles.button} onClick={handleCheckout}>
+          {/* 🚫 Block order when no table number */}
+          <button
+            className={styles.button}
+            onClick={handleCheckout}
+            disabled={!tableNumber}
+            title={!tableNumber ? "No table number set" : undefined}
+          >
             กดสั่ง
           </button>
         </>
