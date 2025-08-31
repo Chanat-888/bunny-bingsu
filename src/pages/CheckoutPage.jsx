@@ -8,7 +8,9 @@ import { collection, addDoc, Timestamp } from "firebase/firestore";
 export default function CheckoutPage() {
   const { cart, clearCart, setCart } = useCart();
   const navigate = useNavigate();
-  const storedTable = localStorage.getItem("tableNumber") || "";
+
+  // ✅ ถ้าไม่มีค่าใน localStorage ให้ใช้ "No table" แทน
+  const storedTable = localStorage.getItem("tableNumber") || "No table";
   const [tableNumber, setTableNumber] = useState(storedTable);
 
   const handleRemove = (indexToRemove) => {
@@ -20,19 +22,17 @@ export default function CheckoutPage() {
   const total = cart
     .reduce(
       (sum, item) =>
-        sum + item.quantity * (item.price + (item.extraPrice || 0)),
+        sum +
+        item.quantity *
+          (item.price + (item.extraPrice || 0)),
       0
     )
     .toFixed(2);
 
+  // ❗ฟังก์ชันเดิม: ไม่แก้ไข
   const handleCheckout = async () => {
-    if (!tableNumber) {
-      alert("Please enter table number");
-      return;
-    }
-
     const order = {
-      table: tableNumber,
+      table: tableNumber, // จะเป็น "No table" ถ้าไม่มีเลขโต๊ะ
       items: cart,
       createdAt: Timestamp.now(),
       status: "pending",
@@ -117,20 +117,19 @@ export default function CheckoutPage() {
             <strong>฿{total}</strong>
           </div>
 
-          {/* 🔒 Show-only table number (no input) */}
+          {/* 🔒 แสดงเลขโต๊ะแบบอ่านอย่างเดียว */}
           <div className={styles.tableRow}>
             <label className={styles.tableLabel}>Table:</label>
             <span className={styles.input}>
-              {tableNumber || "No table"}
+              {tableNumber}
             </span>
           </div>
 
-          {/* 🚫 Block order when no table number */}
+          {/* ✅ ปุ่มสั่งซื้อกดได้เสมอ (เอา disabled ออก) */}
           <button
             className={styles.button}
             onClick={handleCheckout}
-            disabled={!tableNumber}
-            title={!tableNumber ? "No table number set" : undefined}
+            title={tableNumber === "No table" ? "สั่งแบบไม่มีเลขโต๊ะ" : undefined}
           >
             กดสั่ง
           </button>
