@@ -118,14 +118,10 @@ export default function CheckoutPage() {
           </div>
 
           <div className={styles.tableRow}>
-            <label className={styles.tableLabel}>Table:</label>
-            <input
-              type="text"
-              value={tableNumber}
-              onChange={(e) => setTableNumber(e.target.value)}
-              className={styles.input}
-            />
-          </div>
+  <label className={styles.tableLabel}>Table:</label>
+  <span className={styles.input}>{tableNumber}</span>
+</div>
+
 
           <button className={styles.button} onClick={handleCheckout}>
             กดสั่ง
