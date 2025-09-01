@@ -5,11 +5,20 @@ import { useState } from "react";
 import { db } from "../firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 
+// สร้าง/อ่าน customerKey ไว้ผูกกับอุปกรณ์นี้
+function ensureCustomerKey() {
+  let key = localStorage.getItem("customerKey");
+  if (!key) {
+    key = `ck_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+    localStorage.setItem("customerKey", key);
+  }
+  return key;
+}
+
 export default function CheckoutPage() {
   const { cart, clearCart, setCart } = useCart();
   const navigate = useNavigate();
 
-  // ✅ ถ้าไม่มีค่าใน localStorage ให้ใช้ "No table" แทน
   const storedTable = localStorage.getItem("tableNumber") || "No table";
   const [tableNumber, setTableNumber] = useState(storedTable);
 
@@ -24,26 +33,28 @@ export default function CheckoutPage() {
       (sum, item) =>
         sum +
         item.quantity *
-          (item.price + (item.extraPrice || 0)),
+          (item.price + (item.extraPrice || 0) + (item.cheesePrice || 0)),
       0
     )
     .toFixed(2);
 
-  // ❗ฟังก์ชันเดิม: ไม่แก้ไข
   const handleCheckout = async () => {
+    const customerKey = ensureCustomerKey();
+
     const order = {
-      table: tableNumber, // จะเป็น "No table" ถ้าไม่มีเลขโต๊ะ
+      table: tableNumber,
       items: cart,
+      total: Number(total),
       createdAt: Timestamp.now(),
       status: "pending",
-      served: false
+      served: false,
+      customerKey,
     };
 
     try {
-      await addDoc(collection(db, "orders"), order);
+      const docRef = await addDoc(collection(db, "orders"), order);
       clearCart();
-      alert("Order placed!");
-      navigate("/");
+      navigate(`/my-orders?highlight=${docRef.id}`);
     } catch (error) {
       console.error("Error placing order:", error);
       alert("Failed to place order. Try again.");
@@ -56,7 +67,15 @@ export default function CheckoutPage() {
       <h1 className={styles.title}>Checkout</h1>
 
       {cart.length === 0 ? (
-        <p>Your cart is empty.</p>
+        <>
+          <p>ตะกร้าของคุณว่าง</p>
+          {/* ✅ ปุ่มดูคำสั่งซื้อของฉัน เมื่อไม่มีของในตะกร้า */}
+          <div style={{ marginTop: 12, textAlign: "center" }}>
+            <Link to="/my-orders" className={styles.button}>
+              ดูคำสั่งซื้อของฉัน
+            </Link>
+          </div>
+        </>
       ) : (
         <>
           <div className={styles.list}>
@@ -68,11 +87,9 @@ export default function CheckoutPage() {
                   {(item.sauces || []).length > 0 && (
                     <div>Sauces: {item.sauces.join(", ")}</div>
                   )}
-
                   {(item.flavors || []).length > 0 && (
                     <div>Flavors: {item.flavors.join(", ")}</div>
                   )}
-
                   {(item.cheeses || []).length > 0 && (
                     <div>
                       Cheeses:{" "}
@@ -81,11 +98,9 @@ export default function CheckoutPage() {
                         .join(", ")}
                     </div>
                   )}
-
                   {(item.toppings || []).length > 0 && (
                     <div>Toppings: {item.toppings.join(", ")}</div>
                   )}
-
                   {(item.extras || []).length > 0 && (
                     <div>
                       Extras:{" "}
@@ -117,15 +132,12 @@ export default function CheckoutPage() {
             <strong>฿{total}</strong>
           </div>
 
-          {/* 🔒 แสดงเลขโต๊ะแบบอ่านอย่างเดียว */}
+          {/* แสดงเลขโต๊ะแบบอ่านอย่างเดียว */}
           <div className={styles.tableRow}>
             <label className={styles.tableLabel}>Table:</label>
-            <span className={styles.input}>
-              {tableNumber}
-            </span>
+            <span className={styles.input}>{tableNumber}</span>
           </div>
 
-          {/* ✅ ปุ่มสั่งซื้อกดได้เสมอ (เอา disabled ออก) */}
           <button
             className={styles.button}
             onClick={handleCheckout}
@@ -133,6 +145,11 @@ export default function CheckoutPage() {
           >
             กดสั่ง
           </button>
+
+          {/* ✅ ปุ่มดูคำสั่งซื้อของฉัน ตอนที่ตะกร้าไม่ว่าง */}
+          <div style={{ marginTop: 12, textAlign: "center" }}>
+            <Link to="/my-orders">ดูคำสั่งซื้อของฉัน</Link>
+          </div>
         </>
       )}
     </div>

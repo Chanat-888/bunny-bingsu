@@ -1,0 +1,20 @@
+.page { max-width: 720px; margin: 0 auto; padding: 16px; }
+.backButton { text-decoration: none; display: inline-block; margin-bottom: 12px; }
+.title { margin: 0 0 12px; }
+.list { display: grid; gap: 12px; }
+.card { border: 1px solid #eee; border-radius: 12px; padding: 12px; background: #fff; }
+.highlight { outline: 2px solid #222; }
+.headerRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.orderId { font-weight: 700; }
+.subtle { color: #666; font-size: 13px; }
+.status { display: flex; gap: 6px; align-items: center; }
+.badge { font-size: 12px; padding: 4px 8px; border-radius: 999px; border: 1px solid #ddd; }
+.st_pending { background: #fff7e6; border-color: #f2c46b; }
+.st_cooking { background: #eaf4ff; border-color: #7fb3ff; }
+.st_ready { background: #eaffea; border-color: #8bd48b; }
+.st_cancelled { background: #ffeaea; border-color: #e09b9b; }
+.meta { display: flex; gap: 16px; margin: 8px 0 4px; font-size: 14px; }
+.items { display: grid; gap: 8px; margin-top: 8px; }
+.itemRow { display: flex; justify-content: space-between; gap: 8px; border-top: 1px dashed #eee; padding-top: 8px; }
+.addonRow { color: #555; font-size: 13px; }
+.price { white-space: nowrap; }

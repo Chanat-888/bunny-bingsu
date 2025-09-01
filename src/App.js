@@ -7,6 +7,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminMenu from "./pages/AdminMenu";
 import AdminOrders from "./pages/AdminOrders";
 import useAssignTableFromUrl from "./hooks/useAssignTableFromUrl";
+import MyOrders from "./pages/MyOrders";
+
 
 
 function App() {
@@ -29,6 +31,7 @@ function AppRoutes() {
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/admin/menu" element={<AdminMenu />} />
       <Route path="/admin/orders" element={<AdminOrders />} />
+      <Route path="/my-orders" element={<MyOrders />} />
     </Routes>
   );
 }
