@@ -19,8 +19,11 @@ export default function CheckoutPage() {
   const { cart, clearCart, setCart } = useCart();
   const navigate = useNavigate();
 
-  const storedTable = localStorage.getItem("tableNumber") || "No table";
+  const storedTable = localStorage.getItem("tableNumber") || "";
   const [tableNumber, setTableNumber] = useState(storedTable);
+
+  // ✅ state for popup
+  const [showPopup, setShowPopup] = useState(false);
 
   const handleRemove = (indexToRemove) => {
     const updated = [...cart];
@@ -39,6 +42,11 @@ export default function CheckoutPage() {
     .toFixed(2);
 
   const handleCheckout = async () => {
+    if (!tableNumber || tableNumber.trim() === "") {
+      setShowPopup(true); // ✅ show popup instead of alert
+      return;
+    }
+
     const customerKey = ensureCustomerKey();
 
     const order = {
@@ -69,7 +77,6 @@ export default function CheckoutPage() {
       {cart.length === 0 ? (
         <>
           <p>ตะกร้าของคุณว่าง</p>
-          {/* ✅ ปุ่มดูคำสั่งซื้อของฉัน เมื่อไม่มีของในตะกร้า */}
           <div style={{ marginTop: 12, textAlign: "center" }}>
             <Link to="/my-orders" className={styles.button}>
               ดูคำสั่งซื้อของฉัน
@@ -83,7 +90,6 @@ export default function CheckoutPage() {
               <div key={index} className={styles.item}>
                 <div>
                   <strong>{item.name}</strong> x{item.quantity}
-
                   {(item.sauces || []).length > 0 && (
                     <div>Sauces: {item.sauces.join(", ")}</div>
                   )}
@@ -109,7 +115,6 @@ export default function CheckoutPage() {
                         .join(", ")}
                     </div>
                   )}
-
                   <button
                     className={styles.removeButton}
                     onClick={() => handleRemove(index)}
@@ -132,25 +137,48 @@ export default function CheckoutPage() {
             <strong>฿{total}</strong>
           </div>
 
-          {/* แสดงเลขโต๊ะแบบอ่านอย่างเดียว */}
+          {/* ✅ Table number input */}
           <div className={styles.tableRow}>
             <label className={styles.tableLabel}>Table:</label>
-            <span className={styles.input}>{tableNumber}</span>
+            <input
+              type="text"
+              value={tableNumber}
+              onChange={(e) => {
+                setTableNumber(e.target.value);
+                localStorage.setItem("tableNumber", e.target.value);
+              }}
+              placeholder="Enter your table number"
+              className={styles.input}
+            />
           </div>
 
           <button
             className={styles.button}
             onClick={handleCheckout}
-            title={tableNumber === "No table" ? "สั่งแบบไม่มีเลขโต๊ะ" : undefined}
+            disabled={!cart.length}
           >
             กดสั่ง
           </button>
 
-          {/* ✅ ปุ่มดูคำสั่งซื้อของฉัน ตอนที่ตะกร้าไม่ว่าง */}
           <div style={{ marginTop: 12, textAlign: "center" }}>
             <Link to="/my-orders">ดูคำสั่งซื้อของฉัน</Link>
           </div>
         </>
+      )}
+
+      {/* ✅ Popup */}
+      {showPopup && (
+        <div className={styles.popupOverlay}>
+          <div className={styles.popupBox}>
+            <p>กรุณาใส่หมายเลขโต๊ะ</p>
+            <button
+              className={styles.button}
+              onClick={() => setShowPopup(false)}
+            >
+              ปิด
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
