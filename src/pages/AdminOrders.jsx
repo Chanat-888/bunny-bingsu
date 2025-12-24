@@ -344,6 +344,13 @@ export default function AdminOrders() {
         {(groupedOrders[activeDate] || []).map((order) => (
           <div key={order.id} className={styles.orderCard}>
             <h3>Table: {order.table}</h3>
+            <p style={{ 
+      fontWeight: "bold", 
+      color: order.orderType === "takeaway" ? "#dc3545" : "#28a745",
+      fontSize: "1.1rem" 
+  }}>
+    {order.orderType === "takeaway" ? "🛍️ สั่งกลับบ้าน (Takeaway)" : "🍽️ ทานที่นี่ (Dine-in)"}
+  </p>
             <p>Status: {order.status}</p>
             <p>Time: {order.createdAt?.toDate().toLocaleString()}</p>
 

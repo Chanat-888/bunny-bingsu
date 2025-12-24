@@ -22,6 +22,9 @@ export default function CheckoutPage() {
   const storedTable = localStorage.getItem("tableNumber") || "";
   const [tableNumber, setTableNumber] = useState(storedTable);
 
+  // ✅ New State for Order Type (Default to dine-in)
+  const [orderType, setOrderType] = useState("dine-in");
+
   // ✅ state for popup
   const [showPopup, setShowPopup] = useState(false);
 
@@ -49,6 +52,7 @@ export default function CheckoutPage() {
 
     const customerKey = ensureCustomerKey();
 
+    // ✅ Order object now includes orderType
     const order = {
       table: tableNumber,
       items: cart,
@@ -57,6 +61,7 @@ export default function CheckoutPage() {
       status: "pending",
       served: false,
       customerKey,
+      orderType, // 🛍️ "dine-in" or "takeaway"
     };
 
     try {
@@ -137,7 +142,44 @@ export default function CheckoutPage() {
             <strong>฿{total}</strong>
           </div>
 
-          {/* ✅ Table number input */}
+          {/* ✅ UI Section: Order Type Selection */}
+          <div style={{ display: "flex", gap: "10px", marginBottom: "1.5rem" }}>
+            <button
+              type="button"
+              onClick={() => setOrderType("dine-in")}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: "8px",
+                border: "2px solid #28a745",
+                backgroundColor: orderType === "dine-in" ? "#28a745" : "#fff",
+                color: orderType === "dine-in" ? "#fff" : "#28a745",
+                fontWeight: "bold",
+                cursor: "pointer",
+                transition: "0.2s"
+              }}
+            >
+              🍽️ ทานที่นี่
+            </button>
+            <button
+              type="button"
+              onClick={() => setOrderType("takeaway")}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: "8px",
+                border: "2px solid #ffc107",
+                backgroundColor: orderType === "takeaway" ? "#ffc107" : "#fff",
+                color: orderType === "takeaway" ? "#000" : "#ffc107",
+                fontWeight: "bold",
+                cursor: "pointer",
+                transition: "0.2s"
+              }}
+            >
+              🛍️ กลับบ้าน
+            </button>
+          </div>
+
           <div className={styles.tableRow}>
             <label className={styles.tableLabel}>Table:</label>
             <input
@@ -166,7 +208,6 @@ export default function CheckoutPage() {
         </>
       )}
 
-      {/* ✅ Popup */}
       {showPopup && (
         <div className={styles.popupOverlay}>
           <div className={styles.popupBox}>
