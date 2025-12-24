@@ -13,24 +13,18 @@ export function CartProvider({ children }) {
   }, [cart]);
 
   const addToCart = (item) => {
-    setCart((prev) => {
-      const existingIndex = prev.findIndex(
-        (i) =>
-          i.id === item.id &&
-          JSON.stringify(i.sauces || []) === JSON.stringify(item.sauces || []) &&
-          JSON.stringify(i.flavors || []) === JSON.stringify(item.flavors || []) &&
-          JSON.stringify(i.extras || []) === JSON.stringify(item.extras || [])
-      );
+  setCart((prev) => {
+    // We add a unique 'cartId' to every single click. 
+    // This ensures that even identical items are treated as separate rows.
+    const newItem = {
+      ...item,
+      cartId: Date.now() + Math.random(), 
+    };
 
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += item.quantity;
-        return updated;
-      } else {
-        return [...prev, item];
-      }
-    });
-  };
+    // Simply add the new item to the array without checking for duplicates.
+    return [...prev, newItem];
+  });
+};
 
   const clearCart = () => setCart([]);
 
